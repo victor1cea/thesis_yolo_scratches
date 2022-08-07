@@ -45,8 +45,8 @@ layer_1259, layer_1950: aici thin space from next layer actually
 testeaza ipoteza ca pui atele deasupra si sub bucata si iti creste conf sau generezi un
 
 
-
-1280 -> 93 s, 9 s
-960 -> 36 s, 4 s,
-640 -> 32 s, 3 s,
-320 -> 14 s, 2 s,
+ds -> train s, val s, inf s, inf im count, 228 layers
+1280 -> 93 s, 9 s, 82 s, 1368 im
+960 -> 36 s, 4 s, 47 s, 1368 im
+640 -> 32 s, 3 s, 67 s, 3420 im
+320 -> 14 s, 2 s, 105 s, 10260 im
