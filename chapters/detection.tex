@@ -19,6 +19,10 @@ In YOLOv2 the backbone was just a simple network of 19 convolutional layers and 
 The neck component was first used in YOLOv3 with a simple feature pyramid network (FPN), which was then replaced by a PANet SPP network \cite{panet_paper, spp_paper}, but in YOLOv5 the neck is a PANet FPN network. \\
 The head is the single component that remained unchanged. The head is just a small fully convolutional network, known as YOLO head, that predicts the bounding boxes. The YOLO head has some parameters, called anchors, that are used to give the head a rough idea of the general shape of the bounding boxes. Those parameters can be optimized before training.  More details about differences between YOLOv3-5 versions are in \cite{yolo_compare}.\\
 
+TODOs:
+-YOLOv5 network size
+-poza YOLOv5 network
+
 Minor TODOs:\\
 -cite or hyperlink dev tools \\
 \\
@@ -34,10 +38,6 @@ This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and
 
 \subsection{Labels}
 When it comes to labeling of the images, YOLO detectors generally use a distinctive format that consists of 5 numbers for each bounding box: \textit{x, y, w, h, c}. The first two numbers \textit{(x, y)} are the coordinates of the center of the bounding box, then the next two numbers \textit{(w, h)} are the width and height of the bounding box, and finally \textit{c} is the class of the label. The coordinates \textit{(x, y)} and sizes \textit{(w, h)} are normalized w.r.t. the width and height of the image, hence the bounding boxes will always be valid as long the image keeps the same ratio. Each version might have a slight variation of this notation format, but conceptually they are all the same.
-
-
-
-
 
 \subsection{Metrics \& Benchmarks}
 In this section some key concepts regarding the evaluation of detections will be defined in order to avoid any sort of confusion and then the evaluation metrics will be presented. \\
