@@ -31,7 +31,7 @@ Annotating the dataset was a tougher challenge than anticipated, because it's no
   \end{subfigure}
 
   \caption{Thin splits}
-  \label{fig:layer_01486}
+  \label{fig:thin_splits}
 
 \end{figure}
 
@@ -102,6 +102,9 @@ TODO: say later we will see data cost table \\
 \end{center}
 \end{figure*}
 
+TODO train validation mixing \\
+TODO border cutting \\
+
 
 \subsection{Augmentation Pipeline}
 TODO: muss ich sagen woher ideal dataset? \\
@@ -116,3 +119,122 @@ When it came to evaluating an augmentation method, identical dataset shuffles (t
 \end{sidewaysfigure}
 
 Another reason for using identical shuffles is that in small datasets, shuffles are game of chance in terms of data variety. So, when using an identical shuffle, the same variety is ensured. TODO: maybe delete or reformulate this. \\
+
+
+\subsection{Windowing}
+One of the most analyzed and exhaustively tested augmentation method is the windowing method. This method simply takes a rolling window over the image and splits the images in smaller crops, called windows. First, some initial remarks will be presented.
+\begin{itemize}
+\item \textbf{Less CUDA memory:} The training process will now use smaller images, so there will more CUDA memory available, which means a bigger batch size is possbile.
+\item \textbf{Bounding box conversion:} The bounding boxes need to be adjusted to the new window. Luckily, the albumentations library cropping methods supports this.
+\item \textbf{Square vs rectangular training:} The initial intuition was to use tall rectangular windows, that can contain even the longer scratches. This way, the risk of obtaining tiny parts of a scratch in a window was avoided. However, YOLOv5 dataloader support shuffling only for square input images, which in some initial experiments showed a great improvement. Also, the cropping methods from albumentations support filtering tiny bounding boxes.
+\item \textbf{Training times:} After splitting the data into windows, a lot of background windows (i.e. windows that do not contain scratches) are obtained, which can be filtered from the dataset. If not mentioned otherwise, all the background images/windows are removed from the dataset. This greatly improves training times by showing to the model only relevant sections of layers that contain scratches. YOLOv5 documentation recommends about 0-10\% background images. Also, images of smaller resolution take less time to be processed.
+\item \textbf{Window overlapping:} In some unlucky cases a scratch might land on the edge of a window. To avoid this situation, all neighbouring windows have an overlap between them.
+\end{itemize}
+
+\subsubsection{Windowing Strategy}
+The first window strategy, called \textit{grid windowing}, used to extract windows at the same positions for each layer. This showed great results, but a potential problem was that some consecutive layers had the scratches at the exact same locations. This lead to the development of \textit{random windowing}, which crops 1-2 random windows containing each scratch. In this way, the series of similar layers with repeating scratches was diversified into windows that contained the scratches at different positions. However, this method was sometimes unstable. The key difference is that at \textit{grid windowing} a scratch could be captured in 2 neighboring windows due to the overlap and this way the same scratch was captured in twice but at different positions at the window. At \textit{random windowing} this effect could be simulated by taking a random window of the scratch twice, but there was no guarantee that the windows capture the scratch in 2 different perspective. The randomness of this strategy could of course be improved, but it was not worth the effort since \textit{grid windowing} does it good enough. TODO explain better. TODO insert image explaining this concept. In figure \ref{fig:win_strategy} the windows of both methods can be visualized.  TODO: maybe try on second dataset.
+
+\begin{figure}
+  \begin{center}
+  \begin{tabular}{ c c c }
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_21_grid} &
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_22_grid} &
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_23_grid} \\
+   & & \\
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_21_rand} &
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_22_rand} &
+  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_23_rand} \\
+  \end{tabular}
+  \end{center}
+
+  \caption{An exmample of the windowing strategies on 3 similar layers with repeating scratches. The first row shows the grid windowing method and the second row shows the random windowing method.}
+  \label{fig:win_strategy}
+\end{figure}
+
+\subsubsection{Window Size}
+For testing the effects of the window size, YOLOv5 has been trained on datasets with window sizes of 320, 640, 960 and 1280. The single constraint imposed by YOLO detectors is that the height and width needs to be a multiple of 32. \\
+When it comes to better metrics, bigger windows got the better results. The intuitive explanation is that a bigger window may contain not only the annotated scratch itself, but also other dark lines that mimic a scratch like the thin splits shown in figures \ref{fig:thin_splits}, \ref{fig:thin_splits_previous_layer}.\\
+
+\begin{figure}
+\includegraphics[width=\textwidth]{images/map_win_size}
+\caption{mAP@0.5:0.95 for different window sizes}
+\end{figure}
+
+ Bigger windows might have the advantage of capturing more context information, but the drawback is the longer training time as seen in figure \ref{fig:win_train_times}. One naive way to add more context information is to simply keep more background windows with the hope of capturing informative backgrounds, but multiple experiments with different percentage of backround images did not improve the metrics. The problem was that only background images of printed surface have the potential to teach the model something relevant and keeping random background images in the dataset proved not help in any way. With this mind, a new way of keeping background information has been found: Let's say that the desired window size is 320x320. First a dataset \textit{A} with window size of 640x640 is generated and all the background windows are removed. After that, a dataset \textit{B} is obtained by spliting each window from dataset \textit{A} in 4 smaller 320x320 windows. This time all the background windows are kept. The general idea is that it is more likely to find printed regions near a scratch. Training on this new dataset B takes on average 2-3 times longer to train than on a simple 320x320 dataset with 0-10\% background images. \\
+
+\begin{figure}
+  \begin{tabular}{|c|c|}
+  \hline
+  window size & epoch time (in seconds) \\
+  \hline
+  320x320 & 16 \\
+  \hline
+  640x640 & 35 \\
+  \hline
+  960x960 & 40 \\
+  \hline
+  1280x1280 & 102 \\
+  \hline
+  \end{tabular}
+  \caption{Epoch time for the same dataset, but with different window sizes.}
+  \label{fig:win_train_times}
+\end{figure}
+
+
+ One interseting fact for this approach was that training on dataset \textit{B} produced metrics very close to ones from training on dataset \textit{A}. This concept was tested on multiple window sizes for consistency. \\
+
+
+ \subsubsection{Rectangular training and other caveats}
+ TODO
+with --rect no shuffling, image padded, no mosaic or cut-mix
+
+
+
+\subsection{Mosaic and Cut-Mix}
+
+
+\subsection{Translate and Scale}
+
+\subsection{Create Custom Online Augmentation}
+
+\subsection{Stretches and Squeezes}
+Luckily the presented dataset had generally a good distribution of the lengths of scratches, but an interesting research topic was the robustness of the trained model.
+TODO plot distribution \\
+
+ How well does YOLOv5 perform at detecting longer scratches, if it was trained only on shorter scratches? And vice-versa? A
+
+
+TODO talk about artifical examples?? \\
+
+\subsubsection{Constrast}
+
+
+
+\subsection{Hyperparameter Optimizations}
+
+\subsubsection{Model Size}
+
+\subsubsection{Hyperparameter evolution}
+
+\subsubsection{Batch Size}
+The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic (TODO source). For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favour of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size. \\
+TODO show results \\
+
+\subsubsection{Learning Rate and Gradient}
+The initial experiments showed high jumps after each epoch, so a switch from the standard stochastic gradient descent to AdamW has been made. The documentation recommends for AdamW to change the learning rate from 0.01 to 0.001, but a step size of 0.0001 showed a more stable evolution from epoch to epoch.
+TODO maybe show some results
+
+\subsubsection{Loss Function}
+
+
+\subsubsection{IoU threshold}
+
+
+TODO obiective dataset:
+scratches position
+scratches length should have variety (prin stretch si prin window cuts)
+scratch strength variety (sa inventez ceva)
+
+easy source code modifications (la metrics mai ales)
+dataset format
+dataset postprocessing (black border)
