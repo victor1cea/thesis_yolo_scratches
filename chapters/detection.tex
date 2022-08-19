@@ -12,7 +12,7 @@ Current YOLO networks have three main components: the backbone, the neck and the
 In YOLOv2 the backbone was just a simple network of 19 convolutional layers and 5 max pooling layers, simply named Darknet-19 \cite{yolov2_paper}. In the next  version, the backbone had very straightforward improvement idea: increase the depth of the network. The new feature extractor is called Darknet-53 and as the name suggests, it had 53 convolutional layers \cite{yolov3_paper}. In YOLOv4, the Darknet-53 is modified to use CSPNet, which lead to the creation of CSPDarknet53. In order to reduce parameters and layers without impacting performance, YOLOv5 replaced the first three layers from CSPDarknet53 with a Focus layer \cite{yolov5_focus}. \\
 
 \begin{figure}
-\includegraphics[width=\textwidth]{images/yolo_compare}
+\includegraphics[width=\textwidth]{images/yolo_images/yolo_compare}
 \caption{An overview of the structure of YOLOv3-5 networks.}
 \end{figure}
 
@@ -31,7 +31,7 @@ This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and
 
 
 \begin{figure}[!h]
-  \includegraphics[width=\textwidth]{images/yolo_labels_zidane}
+  \includegraphics[width=\textwidth]{images/yolo_images/yolo_labels_zidane}
   \centering
   \caption{Example of YOLO bounding box \cite{yolov5_train_custom}}
 \end{figure}
