@@ -6,6 +6,8 @@ Additive manufacturing (or 3D Printing) is an emerging technology, in which
 different objects are printed in layers having a 3D model as a reference. This technology made rapid prototyping faster and enabled the creation of custom-shaped objects. However this process is not always perfect and printing errors are to be expected. Manually reviewing every print job is a tedious labor work and naturally the desire of automatization of anomaly detection rose. \\
 One interesting 3D printing technique, sand 3D printing, stands out by not using any heat. This allows printing objects of very large sizes, but comes with a specific type of printing defects: scratches. \\
 In this thesis a YOLO-based neural network solution is proposed and analyzed for this automatization procedure. \\
+TODO: motivation
+TODO: one abstraction layer above
 
 TODO: insert example of scratch
 
@@ -37,21 +39,41 @@ In our case the printing errors are scratches on the printed surfaces like in fi
 
 
 \begin{figure}[ht]
-  \includegraphics[width=\textwidth]{images/layer_00325_marked_cropped}
+  \includegraphics[width=0.65\textwidth]{images/layer_00325_marked_cropped}
   \centering
   \caption{Scratches marked from figure \ref{fig:layer}}
   \label{fig:layer_00325_marked_cropped}
 \end{figure}
 
+TODO: OD with NN, bb and semantic segmentation, vezi bookmark nou
+\subsection{Object Detection (With Neural Networks)}
+There are a variety of techniques used to perform object detection. Initially, object detection was posed as a non-neural computer vision problem, but this required a constant and tedious manual tuning of parameters. In order to avoid this tuning, feature-based machine learning algorithms were developed e.g. Viola-Jones algorithm \cite{viola_joines_paper}. In this way the parameter tuning was partially automatized, but it still required manual tuning like selecting optimal the window size and appropiate Haar features for the Viola-Jones algorithm.
+One step further in this direction was the introduction of deep-learning based methods, which use a neural network at heart. A trained neural network would be albe to detect objects with way less parameter tuning. The drawback is that a considerable amount of labeled data for training is now required, which mostly is manually labeled. Luckily, today there are many open source labeled datasets that easily contain hundreds of thounsands of images e.g. ImageNet Dataset \cite{imagenet_site}, OpenImages Dataset \cite{openimages_site}. \\
+Because of the already labeled datasets, the manual labor for deep-learning based methods was greatly reduced and the focus shifted towards those kind of methods, leading to the creation of many innovative models. One distinction among deep-learning based methods, regarding data labeling, is that the objects can be labeled with bounding boxes or segmentation masks. Models that use bounding boxes tend to train and predict faster, while models with segmentation masks will have the benefit of optimizing predictions to a pixel level. Another consideration would be that, if manual labeling is required, drawing bounding boxes is easier and less error prone than drawing an outline for segmentation masks. \\
 
-\subsection{YOLO-based Object Detection}
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.65\textwidth]{images/bbs_vs_seg}
+\caption{Labeling methods: on the left bounding boxes, on the right segmentation masks}
+\end{figure}
+
+Regarding the architecture of neural networks, the detection process may have one or two stages. In a single stage network the prediction is made directly from the extracted features of the image, while in a two stage network the network proposes some regions in the first stage and in the second stage the proposed regions are classified. Initially, single stage detectors predicted faster and could be used for real-time detections, but where performing poorer than two-stage detectors. Conversely, two-stage detectors were not optimal for real-time detection, but were more precise. This rule of thumb got overwritten with the release of You Only Look Once object detector (YOLO).
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.75\textwidth]{images/single_stage_vs_two_stage}
+\caption{Comparing stage types of object detectors.}
+\end{figure}
+
+
+
 The first YOLO object detector, now known as YOLOv1 \cite{yolov1_paper}, got a lot of attention for outperforming the then state-of-the-art object detectors such as DPM \cite{dpm_paper}, Fast R-CNN \cite{fast_rcnn_paper} and Faster R-CNN \cite{faster_rcnn_paper}. Also the simplicity of YOLO was quite refreshing for using only 24 convolutional layers and 2 fully connected layers only, unlike the sophisticated R-CNN based architectures. \\
 Even if in some very deep model variations of Fast and Faster R-CNN the mean average precision (mAP) was slightly better,the FPS counter would take a massive hit e.g. 0.5 FPS only for Fast R-CNN. \\
 
 \begin{figure}[!h]
   \centering
   \includegraphics[width=0.75\linewidth]{images/yolo_images/compare_yolov1}
-  \caption{YOLOv1 compared to then state-of-the-art models \cite{yolov1_paper}}
+  \caption{TODO: make own table. YOLOv1 compared to then state-of-the-art models \cite{yolov1_paper}}
 \end{figure}
 
 
