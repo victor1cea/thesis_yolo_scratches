@@ -81,14 +81,14 @@ This first successful initial release of YOLO was a launch pad for development o
 The backbone has the role to extract features from the image, while the neck tries to aggregate the features from different stages from the backbone. In the end the head does the prediction. Usually the backbone has a quite simple build like ResNet-101 and Darknet-53 \cite{yolov3_paper}.For feature aggregation SPP \cite{spp_paper} and FPN \cite{fpn_paper} are a popular choice . \\
 Later on, different research groups developed their own YOLO-based object detectors and non-canonical versions like YOLOv5 \cite{yolov5_git} and YOLOR \cite{yolor_paper} were created. With this many releases from different research groups, simply taking the latest YOLO version was not a viable choice anymore and for this thesis multiple versions have been tests.\\
 
-\subsection{Main Challenges}
+\subsection{Main Challenges} \label{intro:challenges}
 In this section an overview of some ...
 
 \textbf{Small dataset:}
 As seen in section TODO, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only TODO images contain scratches. \\
 A fortunate thing is that the scratches can fit very good in bounding boxes and no extra precision will be provided by the more tedious, time-consuming segmentation masks. This leads to the next point of labeling. \\
 
-\textbf{Labeling the dataset:}
+\textbf{Labeling the dataset: -> Id relevant scratches, consistency of the labels}
 When labeling the dataset, it was discovered that some scratches might initially appear on a layer and then slowly fade away, as seen in figure TODO. In the middle of the fading process the scratch transitions into a dark gray spot and finally disappears. This makes the labeling difficult, since it is hard to tell in which exact layer a scratch transitions into a dark gray spot.
 It is important to be consistent and have an objective evaluation of the scratches, but humans are not capable of this. This is similar to Sorites Paradox [TODO cite]. Therefore, a metric is needed to ensure consistency.\\
 

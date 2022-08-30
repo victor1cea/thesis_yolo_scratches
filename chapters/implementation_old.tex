@@ -1,24 +1,20 @@
 \section{Implementation of Scratch Detector}
-In this chapter the development and results of a YOLOv5 solution for detection of scratches found on printed layers of a 3D binder jet printer. The following subsections will extend and go in-depth on the list of challenges presented in TODO and present solutions and ideas to handle them.
-
+In this chapter the development and results of a YOLOv5 solution for detection of scratches found on printed layers of a 3D binder jet printer.
 \subsection{Development Environment \& Setup}
-TODO draft available, write it at the end
+Through trial and error the development environment has been continuously improved and finally converged to the one depicted in figure \ref{fig:setup}. A simple dataset manager is used for dataset versioning through FiftyOne's \cite{fiftyone_git} integrated database. Datasets stored in FiftyOne's database can be then visualized in any browser. This helpful for debugging and testing new augmentations methods or visualizing detections and labels in a more interactive way. For annotating labels, CVAT \cite{cvat_git} was one of the more established tools for this task. \\
+The augmentation of data can happen in two ways: offline and online. Ideally is to have as many online augmentations as possible, but the online augmentation framework provided by YOLOv5 forces that each augmentation method takes as input a exactly one labeled image and outputs exactly one labeled image. Changing this framework to be flexible to more output images is difficult, since the underlying albumentations library \cite{albumentations_site} works on the same one input-one output principle. Therefore, for those type of augmentations method is best to be made offline and this is the task of the \textit{Augmenter} from the figure. \\
+For logging Weights \& Biases \cite{wandb_site} was a good candidate, because it's feature rich and YOLOv5 has native support for this. YOLOv5 supports also Tensorboard and ClearML.\\
 
-\subsection{Labeling the Dataset}
-TODO: verallgemeinern mit scratches \\
-As mentioned \ref{intro:challenges}, a scratch might appear very prominent on a layer and then in the next layers it slowly loses it's prominence, so that it becomes only a dark gray region or even completely disappears. The challenge here is to consistently determine on which layer a scratch stops being a scratch and starts being only a dark gray region. Therefore, a metric is needed to measure the prominence of labeled scratches. This way a threshold value can be set to differentiate between scratches and dark regions. \\
-The metric developed for this project works as follows:
-Crop the bounding box from the image. Because the image is a grayscale, the cropped image will have only 1 channel i.e. it can be interpreted as a 2D array. The rows of the array are normalized and the mean row is then calculated. For clarification: the mean row is obtained by summing all rows into 1 row and dividing each element of that row by the total number of rows. The center values of the mean row are usually lower than the values from the start or end of the mean row, because the bounding box has the scratch with darker pixels positioned in the center. The plot of the mean row would look like the hyperbole of $f(x)=x^2$. The mean row is then multiplied by -1 and the plot would look more similar to $f(x)=-x^2$. This mean row multiplied by -1 can be interpreted as single pulse of a signal and the prominence of this signal pulse can be calculated by using special signal processing functions like TODO. \\
-TODO figure of metric here. \\
+ \begin{figure}[!h]
+  \includegraphics[width=\textwidth]{images/setup}
+  \caption{title}
+  \label{fig:setup}
+\end{figure}
 
-Darker scratches will tend to have a higher prominence value than the faded ones. Now the next step is to determine a good threshold for the labeled scratches. One nice trick to visualize the scratches with the respective prominence value was to create a copy of the ground truth dataset and transform the ground truth labels to detections by providing the prominence as the confidence value. Now the dataset can be imported into FiftyOne and the scratches will have the prominence value next to them just like in figure TODO. FiftyOne has also a confidence filter and multiple confidence threshold can be also tested.
+For detection the \textit{detector.py} script provided in YOLOv5 can be used, but an official detector can also be loaded from PyTorch Hub. The latter solution is better for post processing detections.
 
-TOOD no edges.
-
-\begin{enumerate}
-\item Crop the bounding box from the image.
-\end{enumerate}
-
+\subsection{Annotation}
+Annotating the dataset was a tougher challenge than anticipated, because it's not always clear if the dark line is a scratch, thin split in the component or some artifact visible from the layer before. \\
 
 \begin{figure}[ht]
   \centering

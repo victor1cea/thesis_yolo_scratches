@@ -37,7 +37,8 @@ This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and
 \end{figure}
 
 \subsection{Labels}
-When it comes to labeling of the images, YOLO detectors generally use a distinctive format that consists of 5 numbers for each bounding box: \textit{x, y, w, h, c}. The first two numbers \textit{(x, y)} are the coordinates of the center of the bounding box, then the next two numbers \textit{(w, h)} are the width and height of the bounding box, and finally \textit{c} is the class of the label. The coordinates \textit{(x, y)} and sizes \textit{(w, h)} are normalized w.r.t. the width and height of the image, hence the bounding boxes will always be valid as long the image keeps the same ratio. Each version might have a slight variation of this notation format, but conceptually they are all the same.
+YOLO detectors generally use a distinctive format that consists of 5 mandatory and 1 optional values: \textit{x, y, w, h, class, conf (optional)}. The first 2 values \textit{(x, y)} are the coordinates of the center of the bounding box normalized with respect to the width and height of the image. The next values \textit{w,h} are the width and height of the bounding box, also normalized with respect to the width and height of the image. The next value \textit{class} is the class id. Finally, the value \textit{conf} is used only for detected bounding box to store the confidence of the detection. If \textit{conf} is not given, then it can be assumed that the bounding box is a ground truth and not a detection. Each version might have a slight variation of this notation format, but conceptually they are all the same. \\
+This format make the labels invariant to changes of image ratio and resolution.
 
 \subsection{Metrics \& Benchmarks}
 In this section some key concepts regarding the evaluation of detections will be defined in order to avoid any sort of confusion and then the evaluation metrics will be presented. \\
