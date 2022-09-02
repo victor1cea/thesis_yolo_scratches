@@ -6,111 +6,79 @@ TODO draft available, write it at the end
 
 \subsection{Labeling the Dataset}
 TODO: verallgemeinern mit scratches \\
-As mentioned \ref{intro:challenges}, a scratch might appear very prominent on a layer and then in the next layers it slowly loses it's prominence, so that it becomes only a dark gray region or even completely disappears. The challenge here is to consistently determine on which layer a scratch stops being a scratch and starts being only a dark gray region. Therefore, a metric is needed to measure the prominence of labeled scratches. This way a threshold value can be set to differentiate between scratches and dark regions. \\
+
+\textbf{The first challenge:}
+As mentioned \ref{intro:challenges}, some scratches are weaker and should not be marked as actual scratches to not make the model too sensitive. A sensitive model would lead to many false positive detections like a thicker edge or an oxidation spot. The main goal would be to find a metric that can evaluate the prominence of the scratches. With such a metric, each annotated scratch will have a prominence value and therefore a minimum threshold could be used to eliminate the weaker scratches.
+
+\textbf{The solution:}
+A proper metric should measure how dark a scratch line is with respect to it's neighboring background. Also, the metric should not take in consideration the length or width of the scratch.
 The metric developed for this project works as follows:
 Crop the bounding box from the image. Because the image is a grayscale, the cropped image will have only 1 channel i.e. it can be interpreted as a 2D array. The rows of the array are normalized and the mean row is then calculated. For clarification: the mean row is obtained by summing all rows into 1 row and dividing each element of that row by the total number of rows. The center values of the mean row are usually lower than the values from the start or end of the mean row, because the bounding box has the scratch with darker pixels positioned in the center. The plot of the mean row would look like the hyperbole of $f(x)=x^2$. The mean row is then multiplied by -1 and the plot would look more similar to $f(x)=-x^2$. This mean row multiplied by -1 can be interpreted as single pulse of a signal and the prominence of this signal pulse can be calculated by using special signal processing functions like TODO. \\
 TODO figure of metric here. \\
 
-Darker scratches will tend to have a higher prominence value than the faded ones. Now the next step is to determine a good threshold for the labeled scratches. One nice trick to visualize the scratches with the respective prominence value was to create a copy of the ground truth dataset and transform the ground truth labels to detections by providing the prominence as the confidence value. Now the dataset can be imported into FiftyOne and the scratches will have the prominence value next to them just like in figure TODO. FiftyOne has also a confidence filter and multiple confidence threshold can be also tested.
+Darker scratches will tend to have a higher prominence value than the faded ones. Now the only thing left to do is to choose a threshold and filter out the weak scratches. \\
+During the filtering process, it was obeserved that some scratches had a surprisingly low prominence value. Usually, this was because the bounding box was not properly sized and the edges of a printed part were contained. Because the edges are dark, this would make the signal curve flatter and therefore the prominence value would be smaller. A resizing or centering of the bounding box solved this problem.
 
-TOOD no edges.
+TOOD figure of bb with edges here. \\
 
+
+\subsection{Bitmask Integration}
+
+\textbf{The challenge:}
+As discussed in TODO, the images of the layers have two types of anomalies:
 \begin{enumerate}
-\item Crop the bounding box from the image.
+\item thick edges or closely positioned segments that look like scratches
+\item artifacts from previous layer that look like scratches
 \end{enumerate}
+
+This situations might trick even humans and during labeling it was found out that each potential scratch had to be checked by looking the current bitmask and the previous bitmask. The current bitmask was used to check against the first type of anomalies and the previous one for the second type of anomalies. This lead to the intuition of integrating the bitmasks in the training process.
+ However, most object detectors take as input exactly one image with the respective annotations. The challenge is to find a proper way to integrate the two bitmasks with each image and provide the model this extra context information.
 
 
 \begin{figure}[ht]
   \centering
 
-  \begin{subfigure}{\textwidth}
+  \begin{subfigure}{0.75\textwidth}
     \includegraphics[width=\textwidth]{images/layer_01486_marked}
     \caption{Layer with thin splits marked in orange bounding boxes.}
 
   \end{subfigure}
 
-  \begin{subfigure}{\textwidth}
+  \begin{subfigure}{0.75\textwidth}
     \includegraphics[width=\textwidth]{images/bitmask_01486}
     \caption{Corresponding bitmask must be checked to see if it's a scratch or a thin split.}
   \end{subfigure}
 
-  \caption{Thin splits}
+  \caption{Thin splits. TODO horizontal allign, better images}
   \label{fig:thin_splits}
 
 \end{figure}
 
-The safer, but more tedious route is to check layer by layer the corresponding bitmask. This is only one of the many things to consider when annotating.\\
+\textbf{The solution:}
+YOLOv5 works with RGB images and if a grayscale input image is detected, it gets converted to RGB. This conversion provides no extra information and is more a preprocessing step. An alternative conversion method is to represent the grayscale with a single channel only e.g. the red one and the other two channels are just some blank images. \\
 
-Sometimes the scratch is also barely visible or one cannot be sure if the scratch is relevant. Adding every fine scratch will make the model oversensitive, leading to many false positive. One statistical way to determine the strength of a labeled scratch goes roughly as follows:
-\begin{enumerate}
-\item Crop from the layer a window outlined by the bounding box.
-\item Calculate the sum of rows of the image into a vector.
-\item Multiply by -1 the whole vector.
-\item Treat the vector as a signal and calculate prominences for the peak.
-\item Multiple the prominence by a constant scaling factor.
-\end{enumerate}
+TODO figure with the conversion methods. \\
 
-This way the bounding box is converted to signal, which makes a analysis of the strength of the scratch a bit more deterministic. After the 3rd step the plotted vector should look like this:
+The second conversion methods will free up two channels that can be used to add relevant context information. With the challenge statement in mind, filling up the other two channels with the current and previous bitmasks is clearly helpful e.g. the green channel contains now the current bitmask and the blue channel contains now the previous bitmask. This is possible, because the bitmask images are also grayscale images. So instead of provding a grayscale image as an RGB image, three grayscle images are provided as an RGB image. \\
 
-\begin{figure*}[!h]
-\begin{center}
-        \begin{subfigure}{0.3\textwidth}
-        \centering
-        \includegraphics[width=0.2\textwidth]{images/crop_bb}
-        \caption{Cropped bounding box}
-    \end{subfigure}
-                \quad
-    \begin{subfigure}{0.55\textwidth}
-        \includegraphics[width=\textwidth]{images/signal_bb}
-        \caption{Bounding box signal}
-    \end{subfigure}
-            \quad
+TODO figure to show new image mode \\
 
-\caption{TODO: align images.  Transforming a bounding box to a signal.}
-\label{default}
-\end{center}
-\end{figure*}
-
-This method forces the annotation process to be more consistent, but it should be treated as statistical process and not as a deterministic one. In figure \ref{fig:prom_ex} can be seen why this process should not be seen as deterministic: the two scratches are of similar visibility, but have very different prominence values. Luckily, such outliers were rare. \\
-One nice trick to visualize the scratches with the respective prominence value was to create a copy of the existing ground truth dataset and transform the ground truth labels to detections and as confidence value to use the prominence value. Note that in YOLOv5 the only difference between a ground truth bounding box and detection is that the detection has the optional confidence value filled out or less than 1.0. TODO: refer to the chapter that discusses labels (and also update that chapter) \\
-
-\begin{figure}[!h]
-\includegraphics[width=\linewidth]{images/prominence_example}
-\caption{Scratches with prominence values.}
-\label{fig:prom_ex}
-\end{figure}
-
-Another problem are artifacts, that come from previous layers. Some cases are easy to recognize, but a common tricky situation is, if thin splits from previous layers are visible on the current layer. In those situations the thin splits might look like a scratch, have an acceptable prominence value and the bitmask indicates that in the respective region is no thin split. Therefore, the only way to really determine, if it's a scratch or not, is to analyze the previous layer too. As one can see, the annotation process got even more tedious, which means that data gathering is time-consuming and/or expensive.
-TODO: say later we will see data cost table \\
-
-\begin{figure*}[!h]
-\begin{center}
-        \begin{subfigure}{0.6\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/thin_scratch_previous_layer/layer_00107}
-        \caption{A layer with dark lines}
-    \end{subfigure}
-                \quad
-    \begin{subfigure}{0.6\textwidth}
-        \includegraphics[width=\textwidth]{images/thin_scratch_previous_layer/bitmask_00107}
-        \caption{Current bitmask has no splits.}
-    \end{subfigure}
-    \begin{subfigure}{0.6\textwidth}
-        \includegraphics[width=\textwidth]{images/thin_scratch_previous_layer/bitmask_00106}
-        \caption{Previous bitmask contains the seen splits.}
-    \end{subfigure}
-            \quad
-
-\caption{Example of how thin splits are actually from the previous layer.}
-\label{fig:thin_splits_previous_layer}
-\end{center}
-\end{figure*}
-
-TODO train validation mixing \\
-TODO border cutting \\
+This new type of input image proved to make the model more robust against the above described anomalies, but with this new input some consideration and adaptations need to be made. \\
+The layer images and the bitmask images have the same ratio, but different sizes of respectively 2592x1440 and 1800x1000. On one hand, the layer images can be downscaled to 1800x1000 and some image information is lost. On the other hand, the bitmask can be upscaled and the pixel-perfect edges get blurred. Another approach would be to meet somewhere in between e.g. downscale the layer images to 2196x1220 and upscale the bitmasks to 2196x1220. This tradeoff can be however avoided, if the the bitmasks are upscaled to the resolution of the layer images and a threshold on pixel values is used i.e. the pixels with a value below 0.5 are set to 0 and the rest are set to 1. The upscaled and thresholded bitmasks will retain this way all the pixel precise context informations.  \\
+Now the inference step will also need an extra preprocessing step to include the bitmasks and without them the inference is invalid. Also, the first layer is a special case, because it does not have a previous bitmask and the current layer is inserted twice. \\
+This concept of filling the channels with context informations was tested under many variations, but the one presented above delivered the best result. Most variations kept the original input image as the first channel and used different ways to fill up the other two channels. Some example of variations are:
+\begin{itemize}
+\item layer image and twice the current bitmask
+\item layer image,the current bitmask and a logical OR of the current and previous bitmasks
+\item layer image, the current Sobel-filtered bitmask and the previous bitmask
+\end{itemize}
+The first example does not include any informations about the previous bitmask, so the second type of anomalies, the artifacts from previous layers, are detected as edges. The second example was problematic in some cases, because a logical OR of two bitmasks might treat a gap between two segments from the previous layer as a printed region. This leads to detecting a thin gap as a scratch. In the third example the initial intuition was that a Sobel-filter will directly show where the edges are, but the problem is that information about the current printed regions is lost. The list of variations is long, but those were some examplesto get an intuition how context information is lost or malformed.
 
 
-\subsection{Augmentation Pipeline}
+
+
+
+\subsection{Augmentations}
 TODO: muss ich sagen woher ideal dataset? \\
 The dataset at hand features a total of 2295 images of layers with the corresponding bitmask, but only a fraction of the images contain an actual scratch. This makes the dataset from the recommended minimum of 1500 images per class and 10000 instances per class. This forced a focus shift on augmentation methods. \\
 When it came to evaluating an augmentation method, identical dataset shuffles (train, validation, test splits) were used for multiple reasons. One reason is that it's easier to visually compare the validation errors, if the exact same image is used. One nice feature supported with Weights \& Biases logger is the Bounding Box Debugger, which lets the user see the validation labels for each epoch for multiple runs. If the runs had the exact same validation images, then a head-to-head comparison was possible.\\
