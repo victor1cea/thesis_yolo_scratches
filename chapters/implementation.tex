@@ -105,7 +105,8 @@ ds : train s, val s, inf s, inf im count, gen time PE 300 layers \\
 320 : 14 s, 2 s, 105 s, 10260 im, 10 s \\
 
 In set of tests the smallest window size was 320x320 and the size was increased then by 320 after each test. The final window size was 1280x1280. As it can be seen in table TODO, the bigger window sizes provided the best mAP at the cost of higher training times. One surprising fact was that the 1280x1280 windows provided a stable and robust training, despite the fact that bigger windows are more likely to contain unwanted regions. This situations were actually rare, because the questionable scratches and weird regions were usually situated very far from the good scratches. This is a bit of a lucky situation. \\
-The avoidance of scratch splitting was somewhat helpful when training with bigger windows, but it seemed unlikely that this was the only contributing factor for better metrics, since scratch splitting occurred on less than 5\% of the total scratches. A hypothesis is that larger windows provide more examples of scratch-free printed parts, which might contain some interesting cases like a darker edge or a gradient of gray. This in turn makes the model more robust. An initial naive approach was to put more background images in the 640x640 dataset, but the problem is that it even with the higher bound of 20\% background images it did not work. This is because many of the background images were irrelevant and did not contain printed parts. A second approach was to split each window of the 1280x1280 datasets into 4 640x640 windows. With this second approach, "double windowing", the results were similar to the experiment with 1280x1280 windows! TODO say where to see this in the table. The batch size on the double windowed dataset can be increased about 4 times, which leads to better batch normalization. \\
+The avoidance of scratch splitting was somewhat helpful when training with bigger windows, but it seemed unlikely that this was the only contributing factor for better metrics, since scratch splitting occurred on less than 5\% of the total scratches. Also, the edge cases, in which the smaller split of scratch was below a threshold length, was filtered from the dataset.  \\
+ A hypothesis is that larger windows provide more examples of scratch-free printed parts, which might contain some interesting cases like a darker edge or a gradient of gray. This in turn makes the model more robust. An initial naive approach was to put more background images in the 640x640 dataset, but the problem is that it even with the higher bound of 20\% background images it did not work. This is because many of the background images were irrelevant and did not contain printed parts. A second approach was to split each window of the 1280x1280 datasets into 4 640x640 windows. With this second approach, "double windowing", the results were similar to the experiment with 1280x1280 windows! TODO say where to see this in the table. The batch size on the double windowed dataset can be increased about 4 times, which leads to better batch normalization. \\
 
 TODO example of background vs double windowing \\
 
@@ -137,34 +138,50 @@ It is important to make distinction between online and offline augmentations. Wi
 Basic augmentations methods like contrast and brightness manipulations are not affected by those constraint, but the random windowing is affected by this. Technically speaking, the random windowing is not an augmentation step, but it would be nice to be able to provide during each new epoch a new randomly shifted window for all scratches. This alone might stabilize the whole method and not face the fluctuations as discussed in TODO. TODO this some relevant future work, online random windowing if implemented like mosaic and cut-mix.\\
 Among the online augmentations, there is a special group that are able to circumvent some of the constraint. Those are some online augmentations that come out-of-the-box with YOLOv5 like CutMix and Mosaic. \\
 
-\textbf{Mosaic:} The mosaic augmentation it's an online augmentation that takes 4 images and combines them into 1 image and is one of the special online augmentations that circumvents the first constraint. With this augmentation for the price of 4 images a new random image is generated, which is pretty nice for the small dataset on hand. Another trade-off is that the new image actually contains smaller scratches, which raises the question if it's actually a good thing. This question is discussed in-depth in the paragraph about the stretch augmentations. \\
- 
+\textbf{Mosaic:} The mosaic augmentation is an online augmentation that takes 4 images and combines them into 1 image. This augmentation is built-in the YOLOv5 project and the constraint regarding the input for online augmentations is circumvented.
+The input images are also downscaled at different rates, which helps increase the variance . A trade-off is that the new image actually contains smaller scratches, which raises the question if this has an positive or negative impact. This question is discussed in-depth in the paragraph about the stretch augmentations. \\
+The parameters for this augmentation are only the probability of it being applies. The downscaling factors of the images, the number of the input images and the pick distribution are not parameterized. TODO future work improved mosaic paper https://iopscience.iop.org/article/10.1088/1742-6596/1684/1/012094/pdf
+Because of this unidimensional parametrization, the experiments were simply testing the effects of the mosaic augmentation at increments of 0.1 for the application probability. The results favored a application probability range between 0.5 and 0.8. This upper bound of 0.8 is a first indicator that the shrinking of the scratches might be problematic. Note that for higher application probabilities the results were actually ok e.g. the mAP@0.5 was only about 2\% smaller on average. The slightly more visible aspect was that for higher probabilities the bounding boxes were on average shorter, but still able to have an  IoU greater than 0.5. \\
+
+TODO example image mosaic
+
+\textbf{Cut-Mix:}
+The cut-mix is sometimes seen as mosaic augmentation with only 2 input images, but an important distinction needs to be made. The cut-mix crops a regions from an image and pastes it over the other input image at a random location. This was problematic, because sometimes the cropped region was partially or completely covering a scratch. The complet covering of a scratch is simply unwanted information loss and the partial covering was worse than the split scratches, because there is no way of filtering tiny splits like in the windowing process. \\
+As before, the only parameter available is the application probability. Sadly, there is no way optimize/avoid the covering of scratches with the cropped image. For this reason this augmentation method was not used. \\
+TODO future work improve this with control over filter small scratch splits or position of the pasted region
+TODO example image of problem with covering
 
 
-\textbf{Cut-Mix}
+\textbf{Translate and Scale: }
+Those two online affine augmentations are ok, if used carefully. Like before, they have only one parameter, but this time the parameter specifies the translation or scaling range e.g. 0.5 specifies a range of -0.5 to 0.5. For small ranges of up to +/- 0.2 for the translation and up to +/- 0.3 for the scaling the model trains with a nicely varied data. For higher ranges each augmentation had it's own problems. The translation moves the location of the scratch around, but image data is traded for black pixels like in figure TODO. This reduces the amount of relevant background information that provide counter-examples for scratches e.g. thick edges. The scaling affects the average width of the scratch, which in the datasets barely varies by a few pixels. \\
+
+TODO figure cu translation care pierde thick edge \\
+
+TODO future work improve translation \\
 
 
+\textbf{Stretch and Squeeze:}
+YOLO detectors usually have some hyperparameters the bounding boxes called anchors. The anchors are used as prior by the model for the location and shape of the bounding boxes. Ideally, before every training experiment the anchors need to be optimized with respect to the dataset. For newer YOLO versions this done automatically. With the help of windowing and translations the datasets contains a good variance for the positions of the bounding box and also the width barely varies. However, the length varies from 30 pixels to even above 600 pixels. Also, augmentations methods like mosaic tend to shrink the scratches and windowing introduces split scratches. This makes the training biased towards shorter scratches and the performance on longer scratches might be suboptimal. \\
 
-\textbf{Translate and Scale}
-
-\textbf{Create Custom Online Augmentation}
-
-\textbf{Stretches and Squeezes}
-Luckily the presented dataset had generally a good distribution of the lengths of scratches, but an interesting research topic was the robustness of the trained model.
 TODO plot distribution \\
 
- How well does YOLOv5 perform at detecting longer scratches, if it was trained only on shorter scratches? And vice-versa? A
+In order to test the hypothesis, if shorter scratches make the detection of longer scratches worse and vice-versa, an artificial dataset was used. Images were generated by drawing thin and long rectangles on a white background. For testing the hypothesis three artificial datasets, \textit{short scratches}, \textit{medium scratches}, and \textit{long scratches}, were generated. Then, the model was trained on those datasets, generating the corresponding weights \textit{short weights}, \textit{medium weights}, and \textit{long weights}. Each of the weights was then used for detections on each test split of the three artificial datasets. The results are seen in table TODO and it can be seen that YOLOv5 is more robust on detecting scratches from \textit{short scratches} dataset with the weights \textit{long weights}, than vice-versa, detecting on \textit{long scratches} with \textit{short weights}. Because the artificial dataset contains trivial examples, almost all the scratches were detected and the errors were mostly localization errors i.e. IoU below the 0.5 threshold. The IoU threshold can be lowered to 0.35, since a general localization is for this project good enough, but the problem of localization becomes a bit more serious, if the datasets images are split into windows. This is because the localization errors occur because the detected bounding boxes are shorter than the ground truth bounding boxes and for windowing this means that in some cases the detected bounding boxes might not overlap for neighboring windows, which leads to two small double detections in the original image. Therefore, there is a need to provide somehow longer scratches. The initial thought might be to use the scaling augmentation methods, but the method cannot be set to only scale larger and also the width of the scratch might be altered. \\
+An alternative approach is to stretch the scratches by deleting a few upper or lower rows from the image and then resizing the image back to the initial size. This keeps the width unaltered. This stretch augmentation method is then used on the \textit{short scratches} dataset and it can be seen that the results on detecting \textit{long scratches} is improved. \\
+This augmentation method needs to be augmented as a custom online augmentation method in YOLOv5. The current implementation uses only one factor that specifies at what rate the length of the image is reduced before stretching it back to the initial shape. \\
+The other way around is to use a squeeze augmentation method and this works by using windows that are randomly taller than the desired window height, then the windows are resized to the desired window height. This method is not possible to implement as an online augmentation method, because the taller windows cannot be squeezed due to the constraint of equal input and output size. Another approach might be to retrieve some corresponding upper or lower image rows of the respective window, but this is not possible, because the name/id of the window is not known. Therefore, this can be technically implemented as an offline augmentation methods. \\
+
+TODO table short, medium, long, stretched
 
 
-TODO talk about artifical examples?? \\
+\textbf{Constrast:} As stated in TODO, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
+In most experiments a contrast change of +/- 0.15 with any application probability helped the model be more robust and less false positive were detected. \\
 
-\textbf{Constrast}
-
-
-
+\textbf{To avoid:}
+hsv
 occlusions:
   - random erase, cutout not working
   - similar effect scratch splitting
+brightness
 
 mixup not workingF
 
