@@ -1,9 +1,6 @@
 \section{Implementation of Scratch Detector}
 In this chapter the development and results of a YOLOv5 solution for detection of scratches found on printed layers of a 3D binder jet printer. The following subsections will extend and go in-depth on the list of challenges presented in TODO and present solutions and ideas to handle them.
 
-\subsection{Development Environment \& Setup}
-TODO draft available, write it at the end
-
 \subsection{Labeling the Dataset}
 TODO: verallgemeinern mit scratches \\
 
@@ -59,117 +56,100 @@ YOLOv5 works with RGB images and if a grayscale input image is detected, it gets
 
 TODO figure with the conversion methods. \\
 
-The second conversion methods will free up two channels that can be used to add relevant context information. With the challenge statement in mind, filling up the other two channels with the current and previous bitmasks is clearly helpful e.g. the green channel contains now the current bitmask and the blue channel contains now the previous bitmask. This is possible, because the bitmask images are also grayscale images. So instead of provding a grayscale image as an RGB image, three grayscle images are provided as an RGB image. \\
+The second conversion methods will free up two channels that can be used to add relevant context information. With the challenge statement in mind, filling up the other two channels with the current and previous bitmasks is clearly helpful e.g. the green channel contains now the current bitmask and the blue channel contains now the previous bitmask. This is possible, because the bitmask images are also grayscale images. So instead of providing a grayscale image as an RGB image, three grayscale images are provided as an RGB image. \\
 
 TODO figure to show new image mode \\
 
 This new type of input image proved to make the model more robust against the above described anomalies, but with this new input some consideration and adaptations need to be made. \\
-The layer images and the bitmask images have the same ratio, but different sizes of respectively 2592x1440 and 1800x1000. On one hand, the layer images can be downscaled to 1800x1000 and some image information is lost. On the other hand, the bitmask can be upscaled and the pixel-perfect edges get blurred. Another approach would be to meet somewhere in between e.g. downscale the layer images to 2196x1220 and upscale the bitmasks to 2196x1220. This tradeoff can be however avoided, if the the bitmasks are upscaled to the resolution of the layer images and a threshold on pixel values is used i.e. the pixels with a value below 0.5 are set to 0 and the rest are set to 1. The upscaled and thresholded bitmasks will retain this way all the pixel precise context informations.  \\
-Now the inference step will also need an extra preprocessing step to include the bitmasks and without them the inference is invalid. Also, the first layer is a special case, because it does not have a previous bitmask and the current layer is inserted twice. \\
-This concept of filling the channels with context informations was tested under many variations, but the one presented above delivered the best result. Most variations kept the original input image as the first channel and used different ways to fill up the other two channels. Some example of variations are:
+The layer images and the bitmask images have the same ratio, but different sizes of respectively 2592x1440 and 1800x1000. On one hand, the layer images can be downscaled to 1800x1000 and some image information is lost. On the other hand, the bitmask can be upscaled and the pixel-perfect edges get blurred. Another approach would be to meet somewhere in between e.g. downscale the layer images to 2196x1220 and upscale the bitmasks to 2196x1220. This trade off can be however avoided, if the the bitmasks are upscaled to the resolution of the layer images and a threshold on pixel values is used i.e. the pixels with a value below 0.5 are set to 0 and the rest are set to 1. The upscaled and thresholded bitmasks will retain this way all the pixel precise context information.  \\
+Now the inference step will also need an extra pre-processing step to include the bitmasks and without them the inference is invalid. Also, the first layer is a special case, because it does not have a previous bitmask and the current layer is inserted twice. \\
+This concept of filling the channels with context information was tested under many variations, but the one presented above delivered the best result. Most variations kept the original input image as the first channel and used different ways to fill up the other two channels. Some example of variations are:
 \begin{itemize}
 \item layer image and twice the current bitmask
 \item layer image,the current bitmask and a logical OR of the current and previous bitmasks
 \item layer image, the current Sobel-filtered bitmask and the previous bitmask
 \end{itemize}
-The first example does not include any informations about the previous bitmask, so the second type of anomalies, the artifacts from previous layers, are detected as edges. The second example was problematic in some cases, because a logical OR of two bitmasks might treat a gap between two segments from the previous layer as a printed region. This leads to detecting a thin gap as a scratch. In the third example the initial intuition was that a Sobel-filter will directly show where the edges are, but the problem is that information about the current printed regions is lost. The list of variations is long, but those were some examplesto get an intuition how context information is lost or malformed.
+The first example does not include any information about the previous bitmask, so the second type of anomalies, the artifacts from previous layers, are detected as edges. The second example was problematic in some cases, because a logical OR of two bitmasks might treat a gap between two segments from the previous layer as a printed region. This leads to detecting a thin gap as a scratch. In the third example the initial intuition was that a Sobel-filter will directly show where the edges are, but the problem is that information about the current printed regions is lost. The list of variations is long, but those were some examples to get an intuition how context information is lost or malformed.
+
+\subsection{Windowing}
+
+\textbf{The challenges:} In the current release of YOLOv5 rectangular images are not that well supported. Data shuffling during training is available only for square input images, which is needed for a more robust training. Internally, rectangular images are actually padded to a square shape. This means that the images can be simply padded before using them as input to YOLOv5, but is the color or method of padding relevant? If so, how does this affect the training? \\
+Another problem during development are questionable scratches like the ones that are positioned exactly on the edge and weird regions like oxidation spots. The easy way would be to simply ignore those images, but what if the image contains only one questionable scratch and three prominent scratches? The luxury of throwing away images is not very affordable with this small dataset. Remember that the dataset on hand is minuscule in comparison with open datasets. \\
+
+TODO maybe show questionable scratches and oxidation spots \\
+
+The current images have a resolution way bigger than the average open datasets, so smaller batch sizes and/or longer training times are to be expected. Is there a way to use as training input only relevant regions of the images without losing any performance?\\
+
+\textbf{The concept solution:} All the above problems can be solved by dividing the input image into smaller windows and training the model on those windows, called "windowing" for short.  However, there are many variables and considerations to be made:
+\begin{itemize}
+\item What is the optimal window size?
+\item Is an overlap between the windows needed?
+\item Are there any problems, if a scratch is not completely contained in a window?
+\item What are the windowing strategies?
+\item How to identify relevant windows?
+\item How is the inference impacted?
+\end{itemize}
+The multiple sub-challenges together with those additional considerations make the topic of windowing more complex, but during this section an in-depth analysis of the windowing process will be made.
+
+\subsubsection{Window Shape and Size}
+As stated in the challenges, YOLOv5 is designed to work with square images. Using rectangular images disables data shuffling during and training and adds more potential side-effects with the padding of rectangular images to square images. The padding can have a color like the mean image color, or it can be a reflection of the last pixels. All those problem simply disappear, if the input image is subdivided into equally sized square windows. If needed, the neighboring windows might have an overlap to be able to use any desired window square size. TODO explain overlap better \\
+There are two types of images with respect to the count of annotations: normal images that have at least one annotation and background images that have no annotations. Because of the windowing, the number of background images can be quite large, but for the moment it is safe to not use them for training, because the official YOLOv5 documentations recommends a range of 0-20\% of the training dataset to be background images. \\
+The next step is to take the right square size. Smaller windows will decrease the training time, and the questionable scratches and weird regions can be easily filtered out from training. The downside is that some scratches might get split into multiple windows and in some cases the splits are very unlucky e.g. one window might contains only 5\% of the original scratch. With bigger windows, the problems and benefits go in the opposite directions: the granular control of the scratch and region filter is lost, the training times increase, but the scratch splitting problem is less prevalent. The only constraint imposed by YOLOv5 is that windows width and length need to be a multiple of 32.\\
+
+TODO make this table \\
+228 layers \\
+ds : train s, val s, inf s, inf im count, gen time PE 300 layers \\
+1280 : 93 s, 9 s, 82 s, 1368 im, 11 s \\
+960 : 36 s, 4 s, 47 s, 1368 im, 11 s \\
+640 : 32 s, 3 s, 67 s, 3420 im, 10 s \\
+320 : 14 s, 2 s, 105 s, 10260 im, 10 s \\
+
+In set of tests the smallest window size was 320x320 and the size was increased then by 320 after each test. The final window size was 1280x1280. As it can be seen in table TODO, the bigger window sizes provided the best mAP at the cost of higher training times. One surprising fact was that the 1280x1280 windows provided a stable and robust training, despite the fact that bigger windows are more likely to contain unwanted regions. This situations were actually rare, because the questionable scratches and weird regions were usually situated very far from the good scratches. This is a bit of a lucky situation. \\
+The avoidance of scratch splitting was somewhat helpful when training with bigger windows, but it seemed unlikely that this was the only contributing factor for better metrics, since scratch splitting occurred on less than 5\% of the total scratches. A hypothesis is that larger windows provide more examples of scratch-free printed parts, which might contain some interesting cases like a darker edge or a gradient of gray. This in turn makes the model more robust. An initial naive approach was to put more background images in the 640x640 dataset, but the problem is that it even with the higher bound of 20\% background images it did not work. This is because many of the background images were irrelevant and did not contain printed parts. A second approach was to split each window of the 1280x1280 datasets into 4 640x640 windows. With this second approach, "double windowing", the results were similar to the experiment with 1280x1280 windows! TODO say where to see this in the table. The batch size on the double windowed dataset can be increased about 4 times, which leads to better batch normalization. \\
+
+TODO example of background vs double windowing \\
+
+Another interesting discovery is that it's better to split the dataset after the windowing has been done. This ensures a more similar distribution between the splits. This observation alone stabilized the training experiments very much. \\
 
 
+
+
+\subsubsection{Windowing Strategies}
+In the subsection from above a "grid windowing" strategy was assumed and as the name suggests, the corners of a grid are used to determine how to extract the windows. In a more advanced form, grid windowing also overlaps the neighboring windows. This helps avoiding the extreme cases of scratch splitting as seen in figure TODO. One problem with grid windowing is that some layer are very similar to each other and also repeat the scratches at the exact same locations. This makes many windows to be repetitive.\\
+A second window strategy, "random windowing", each scratch is initially contained in a window. The windows are then shifted randomly along the X and Y axis. This avoid the problem of repetitive windows described in grid windowing. \\
+In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates about 7\% from the average metric baseline. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. \\
+
+TODO insert image here \\
+
+\subsubsection{Adaptations for Detection}
+If a model is trained on windows instead of the original images, some pre- and post-processing steps for detection need to be considered. \\
+Before the detection, images need to be split in windows of similar shapes used in training. The strategy needs to be grid windowing, because all areas of the images need to be detected and this strategy makes reconstruction of the image easier. Also, an extra set of window between neighboring windows can be used to avoid scratch splitting. TODO ex image cu asta. \\
+After the detection, the windows with the respective detections need to be reconstructed to the original window. One naive way would be to draw detections on the windows and the reconstruct the windows into the original image. However, the trick is that with grid windowing every window has a predetermined position and the actual reconstruction of a new image can be avoided. In this implementation of grid windowing, the position of a window is specified by the upper left corner, width and height. This meta information can be easily encoded e.g. in the name of the file. Let's assume that a window of size 640x640 extracted from the corner TODO, TODO contains a detection. This detection can now be translated by TODO, TODO pixels and a valid detection for the original image is obtained. The translated detections can now be drawn directly in the original image.\\
+ Note that the detection is in YOLO format and the position of the initial detection is expressed in normalized coordinates with respect to the window size.Therefore, a conversion of the detection from the YOLO label format to COCO format (TODO ref for formats) for the translation step is needed. After the translation, the detection can be converted back into the YOLO format.  Alternatively, the translation can be normalized with respect to the original image size.\\
+ The naive way is at least 10 times slower, but it still was able to deliver a few FPS, which for this project is actually acceptable. A real-time detection is however possible with the second approach. \\
+ Another post-processing step after the translation of the detections is the merging of detections. Because scratches might get split, the respective detections should be some overlapping bounding boxes. Those bounding boxes need to be also merged. The problem is that sometimes the bounding boxes might no overlap at all and be even a few pixels apart and that is why an extra set of windows as shown in TODO is used. This helps in connecting the disjointed detections. \\
 
 
 
 \subsection{Augmentations}
-TODO: muss ich sagen woher ideal dataset? \\
-The dataset at hand features a total of 2295 images of layers with the corresponding bitmask, but only a fraction of the images contain an actual scratch. This makes the dataset from the recommended minimum of 1500 images per class and 10000 instances per class. This forced a focus shift on augmentation methods. \\
-When it came to evaluating an augmentation method, identical dataset shuffles (train, validation, test splits) were used for multiple reasons. One reason is that it's easier to visually compare the validation errors, if the exact same image is used. One nice feature supported with Weights \& Biases logger is the Bounding Box Debugger, which lets the user see the validation labels for each epoch for multiple runs. If the runs had the exact same validation images, then a head-to-head comparison was possible.\\
+The dataset at hand features a total of 2295 images of layers with the corresponding bitmask, but only a fraction of the images contain an actual scratch. This is far from the recommended minimum of 1500 images per class and 10000 instances per class. \\
+It is important to make distinction between online and offline augmentations. With offline augmentations the images are augmented before the training and with online augmentation the images are augmented every epoch during the training. With a relatively small increase of training time, online augmentation provide a more robust training with the extra variance in the dataset, but sadly, not all augmentations methods can be implemented as online methods due to some technical constraints imposed by albumentations, the augmentation library used internally by YOLOv5 and YOLOv5 itself. The first constraint is that every augmentation method can have as input exactly one image with a list of bounding boxes. The second constraint is that the output is exactly one image with a list of bounding boxes. The third constraint is that the input image size needs to correspond with the output image size. \\
+Basic augmentations methods like contrast and brightness manipulations are not affected by those constraint, but the random windowing is affected by this. Technically speaking, the random windowing is not an augmentation step, but it would be nice to be able to provide during each new epoch a new randomly shifted window for all scratches. This alone might stabilize the whole method and not face the fluctuations as discussed in TODO. TODO this some relevant future work, online random windowing if implemented like mosaic and cut-mix.\\
+Among the online augmentations, there is a special group that are able to circumvent some of the constraint. Those are some online augmentations that come out-of-the-box with YOLOv5 like CutMix and Mosaic. \\
 
-\begin{sidewaysfigure}
-    \centering
-    \includegraphics[width=\textwidth]{images/bb_debugger}
-    \caption{Comparing head-to-head detections on validation images with the Bounding Box Debugger}
-    \label{fig:bb_deb}
-\end{sidewaysfigure}
-
-Another reason for using identical shuffles is that in small datasets, shuffles are game of chance in terms of data variety. So, when using an identical shuffle, the same variety is ensured. TODO: maybe delete or reformulate this. \\
+\textbf{Mosaic:} The mosaic augmentation it's an online augmentation that takes 4 images and combines them into 1 image and is one of the special online augmentations that circumvents the first constraint. With this augmentation for the price of 4 images a new random image is generated, which is pretty nice for the small dataset on hand. Another trade-off is that the new image actually contains smaller scratches, which raises the question if it's actually a good thing. This question is discussed in-depth in the paragraph about the stretch augmentations. \\
+ 
 
 
-\subsection{Windowing}
-One of the most analyzed and exhaustively tested augmentation method is the windowing method. This method simply takes a rolling window over the image and splits the images in smaller crops, called windows. First, some initial remarks will be presented.
-\begin{itemize}
-\item \textbf{Less CUDA memory:} The training process will now use smaller images, so there will more CUDA memory available, which means a bigger batch size is possbile.
-\item \textbf{Bounding box conversion:} The bounding boxes need to be adjusted to the new window. Luckily, the albumentations library cropping methods supports this.
-\item \textbf{Square vs rectangular training:} The initial intuition was to use tall rectangular windows, that can contain even the longer scratches. This way, the risk of obtaining tiny parts of a scratch in a window was avoided. However, YOLOv5 dataloader support shuffling only for square input images, which in some initial experiments showed a great improvement. Also, the cropping methods from albumentations support filtering tiny bounding boxes.
-\item \textbf{Training times:} After splitting the data into windows, a lot of background windows (i.e. windows that do not contain scratches) are obtained, which can be filtered from the dataset. If not mentioned otherwise, all the background images/windows are removed from the dataset. This greatly improves training times by showing to the model only relevant sections of layers that contain scratches. YOLOv5 documentation recommends about 0-10\% background images. Also, images of smaller resolution take less time to be processed.
-\item \textbf{Window overlapping:} In some unlucky cases a scratch might land on the edge of a window. To avoid this situation, all neighbouring windows have an overlap between them.
-\end{itemize}
-
-\subsubsection{Windowing Strategy}
-The first window strategy, called \textit{grid windowing}, used to extract windows at the same positions for each layer. This showed great results, but a potential problem was that some consecutive layers had the scratches at the exact same locations. This lead to the development of \textit{random windowing}, which crops 1-2 random windows containing each scratch. In this way, the series of similar layers with repeating scratches was diversified into windows that contained the scratches at different positions. However, this method was sometimes unstable. The key difference is that at \textit{grid windowing} a scratch could be captured in 2 neighboring windows due to the overlap and this way the same scratch was captured in twice but at different positions at the window. At \textit{random windowing} this effect could be simulated by taking a random window of the scratch twice, but there was no guarantee that the windows capture the scratch in 2 different perspective. The randomness of this strategy could of course be improved, but it was not worth the effort since \textit{grid windowing} does it good enough. TODO explain better. TODO insert image explaining this concept. In figure \ref{fig:win_strategy} the windows of both methods can be visualized.  TODO: maybe try on second dataset.
-
-\begin{figure}
-  \begin{center}
-  \begin{tabular}{ c c c }
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_21_grid} &
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_22_grid} &
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_23_grid} \\
-   & & \\
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_21_rand} &
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_22_rand} &
-  \includegraphics[width=.3\linewidth]{images/win_strategy/layer_23_rand} \\
-  \end{tabular}
-  \end{center}
-
-  \caption{An exmample of the windowing strategies on 3 similar layers with repeating scratches. The first row shows the grid windowing method and the second row shows the random windowing method.}
-  \label{fig:win_strategy}
-\end{figure}
-
-\subsubsection{Window Size}
-For testing the effects of the window size, YOLOv5 has been trained on datasets with window sizes of 320, 640, 960 and 1280. The single constraint imposed by YOLO detectors is that the height and width needs to be a multiple of 32. \\
-When it comes to better metrics, bigger windows got the better results. The intuitive explanation is that a bigger window may contain not only the annotated scratch itself, but also other dark lines that mimic a scratch like the thin splits shown in figures \ref{fig:thin_splits}, \ref{fig:thin_splits_previous_layer}.\\
-
-\begin{figure}
-\includegraphics[width=\textwidth]{images/map_win_size}
-\caption{mAP@0.5:0.95 for different window sizes}
-\end{figure}
-
- Bigger windows might have the advantage of capturing more context information, but the drawback is the longer training time as seen in figure \ref{fig:win_train_times}. One naive way to add more context information is to simply keep more background windows with the hope of capturing informative backgrounds, but multiple experiments with different percentage of backround images did not improve the metrics. The problem was that only background images of printed surface have the potential to teach the model something relevant and keeping random background images in the dataset proved not help in any way. With this mind, a new way of keeping background information has been found: Let's say that the desired window size is 320x320. First a dataset \textit{A} with window size of 640x640 is generated and all the background windows are removed. After that, a dataset \textit{B} is obtained by spliting each window from dataset \textit{A} in 4 smaller 320x320 windows. This time all the background windows are kept. The general idea is that it is more likely to find printed regions near a scratch. Training on this new dataset B takes on average 2-3 times longer to train than on a simple 320x320 dataset with 0-10\% background images. \\
-
-\begin{figure}
-  \begin{tabular}{|c|c|}
-  \hline
-  window size & epoch time (in seconds) \\
-  \hline
-  320x320 & 16 \\
-  \hline
-  640x640 & 35 \\
-  \hline
-  960x960 & 40 \\
-  \hline
-  1280x1280 & 102 \\
-  \hline
-  \end{tabular}
-  \caption{Epoch time for the same dataset, but with different window sizes.}
-  \label{fig:win_train_times}
-\end{figure}
-
-
- One interseting fact for this approach was that training on dataset \textit{B} produced metrics very close to ones from training on dataset \textit{A}. This concept was tested on multiple window sizes for consistency. \\
-
-
- \subsubsection{Rectangular training and other caveats}
- TODO
-with --rect no shuffling, image padded, no mosaic or cut-mix
+\textbf{Cut-Mix}
 
 
 
-\subsection{Mosaic and Cut-Mix}
+\textbf{Translate and Scale}
 
+\textbf{Create Custom Online Augmentation}
 
-\subsection{Translate and Scale}
-
-\subsection{Create Custom Online Augmentation}
-
-\subsection{Stretches and Squeezes}
+\textbf{Stretches and Squeezes}
 Luckily the presented dataset had generally a good distribution of the lengths of scratches, but an interesting research topic was the robustness of the trained model.
 TODO plot distribution \\
 
@@ -178,28 +158,36 @@ TODO plot distribution \\
 
 TODO talk about artifical examples?? \\
 
-\subsubsection{Constrast}
+\textbf{Constrast}
+
+
+
+occlusions:
+  - random erase, cutout not working
+  - similar effect scratch splitting
+
+mixup not workingF
 
 
 
 \subsection{Hyperparameter Optimizations}
 
-\subsubsection{Model Size}
+\textbf{Model Size}
 
-\subsubsection{Hyperparameter evolution}
+\textbf{Hyperparameter evolution}
 
-\subsubsection{Batch Size}
+\textbf{Batch Size}
 The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic (TODO source). For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favour of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size. \\
 TODO show results \\
 
-\subsubsection{Learning Rate and Gradient}
+\textbf{Learning Rate and Gradient}
 The initial experiments showed high jumps after each epoch, so a switch from the standard stochastic gradient descent to AdamW has been made. The documentation recommends for AdamW to change the learning rate from 0.01 to 0.001, but a step size of 0.0001 showed a more stable evolution from epoch to epoch.
 TODO maybe show some results
 
-\subsubsection{Loss Function}
+\textbf{Loss Function}
 
 
-\subsubsection{IoU threshold}
+\textbf{IoU threshold}
 
 
 TODO obiective dataset:
@@ -210,3 +198,10 @@ scratch strength variety (sa inventez ceva)
 easy source code modifications (la metrics mai ales)
 dataset format
 dataset postprocessing (black border)
+
+
+
+\subsection{Development Environment \& Setup}
+TODO draft available, write it at the end
+
+Bounding Box Debugger
