@@ -181,28 +181,72 @@ In most experiments a contrast change of +/- 0.15 with any application probabili
 
 TODO show example images
 
-\textbf{To avoid:}
+\textbf{Flips:} Flipping means rotating the image around the vertical or horizontal axis. This simple, yet effective method prevents the model to look for a specific structure in the images. In the current use case, the scratches are not always perfectly centered in the bounding boxes. This might happen because most tools provide a usual feedback only after the drawing process of the bounding boxes begins. \\
+YOLOv5 supports horizontal and vertical flips as online augmentations, but the implementation has some drawbacks. The double flip i.e. horizontal flip, followed by a vertical flips is not supported and if the image gets flipped, the original image will not be used for training. The original image is discarded, because of the constraint of a single output of online augmentations. \\
+The aforementioned drawbacks lead to the development of an own offline augmentation method that supports the double flip. Because the single output constraint is avoided, the dataset may contain the original as well multiple flips of the image. In order to show the importance of using multiple flips, the training experiments from TOOD show how the number of flips impacts the training. In those experiments the original image is treated as the \textit{none} flip. The worst performing experiment is clearly the one that uses a single flip version of the image and an improvement can be seen for each extra added flip. \\
 
-\textbf{Occlusions:} The augmentation methods that end up occluding region of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask.
+TODO show examples on cvat, show how gimp uses the lines
+TODO show flips
+TODO show experiments
+
+Flipping methods help the model become more robust in case the data does not contai
+
+
+All the above augmentation methods are helpful for the given use case of scratch detections with the exception of the CutMix. Now the next paragraphs will discuss types of augmentations that proved to be affecting the general performance of the model.
+
+\textbf{Occlusions:} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask. TODO cite papers of the augs
+
+\textbf{HSV augmentation:} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in TODO. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
+
+\textbf{Shears and Rotations:} One main characteristic of the scratches is the verticality. Image shearing or rotations will generate images that are outside of the distribution and will force the model to learn about scratches horizontal and diagonal scratches that do not actually exist. Another problem is that the anchors of the bounding boxes will not be properly optimized, because a diagonally placed scratch will not a shorter and wider bounding box. This mean that the fitting of bounding boxes will get worse.
+
+\textbf{Image Perspective:} This augmentation has negative effects on a similar note to the shears and rotations. In the given dataset all images are captured from a perpendicular perspective since the camera is positioned directly above the center of the powder bed. Changes in the image perspective will generate images outside of the distribution. \\
+Perspective changes will also affect the verticality of the scratches, which affects the anchors of the bounding boxes and generates unreal data. \\
+
+\textbf{Hidden Augmentations:}
+In the current implementation of YOLOv5 there is a hidden pipeline of augmentations that are generally bad for the use case of scratch detections. The hidden detections are:
+\begin{enumerate}
+\item Blur and Median Blur: This affects the sharpness of the edges and the model does not learn to distinguish a thick edge from a scratch
+\item Grayscaling: This converts the image to a single channel image and therefore the new compressed images fail to provide context information from the integrated bitmasks.
+\item CLAHE (Contrast Limited Adaptive Histogram Equalization): This one tries to reduce the noise of an image and it ends up removing very faded scratches or making the oxidation marks very dark. This will make the model see less edge cases. \\
+\end{enumerate}
+The application probability is only 1\% for all, but they still might confuse the model with the altered bitmasks and less expressive images. Those are used as an example for creating a custom online augmentation with \textit{albumentations} and the best way to deactivate the augmentations it to delete the provided example. Technically, if the \textit{albumentations} library is not installed all the custom online augmentations are disabled, but this will disable also the self implemented augmentations like the contrast, which is definitely not a good idea.
+TODO this is more technical, is it ok?
 
 TODO images from \ref{roboflow_yolov4_augs}
 TODO What is the Bag of Freebies in YOLOv4?
+TODO talk about Bag of Specials
+TODO future work iou threshold
 
-hsv
-occlusions:
-  - random erase, cutout not working
-  - similar effect scratch splitting
-brightness
-
-mixup not workingF
+TODO talk about anchors in YOLO in detection.tex
 
 TODO future work random windowing online
 
+\subsection{Two Stage Training}
+The false positive were most of the time the bigger problem than the false negatives. With windowing the model has on average multiple chances to detect the same scratch due to the overlapping of the windows and therefore less scratches are missed. To push down the number of false positive, a two stage training approach can be used to feed the false positives to the model as a negative class. Note that this should not be confused with a two stage detection. \\
+In two stage training two datasets are used. The first one contains no background images, but the second one contains extends the first dataset by containing all the background windows too. Remember that for YOLO a background rate of 0-20\% is recommended, so only the first dataset can be normally used for training. Now the model can be trained a first time on the first dataset. Then an inference is performed on the second dataset and the false positives can be all marked as a second class. Now a third dataset is created, which contains the newly obtained 2 class labels, but also with no background windows. This dataset in an enhancement of the first dataset by marking all the false positive with a new class and introducing background windows that might further contain false positives. Finally, a second training experiment is performed with the third dataset. \\
+TODO drawing of 2 stage training \\
+This way the model learns in the second stage from the mistakes it made in first stage. The metrics on the second class are not very important, because this class is not really a class of objects, but rather a sinkhole for outliers and unexpected cases. One example of an unexpected case is the presence of a black border in the images. Those black borders can be eliminated in a pre-processing step, but then this pre-processing step needs to be also integrated in the inference. Also, this pre-processing steps might involve future manual adjustments, if in future datasets the border becomes thicker or thinner. With a two stage training approach all those cases can be learned by the model and manual tuning is avoided.\\
+TODO show black border \\
+After the second stage the initial number of false positives drops by 80\% on average, but there is a slight problem with the metrics and validation losses. Because the second class is actually a sinkhole, the metrics and validation losses from this class do not have a relevant meaning. Because YOLOv5 outputs by default the metrics and losses aggregated and not for each class individually, it is difficult to track the second training experiment. \\
+TODO drawing of 2 stage training alternative or maybe combine with the one above\\
+An alternative way for the 2 stage training is that the after creation of the third dataset, the labels for the second class can be deleted, but the respective windows are kept. This way the model gets to see the outliers and tricky cases without using a second class. This way the second training experiment can be then properly monitored. The downside of this approach is that the false positive rate drops by only 60\% on average, because there is no bounding box to specifically mark the problematic situations. \\
+The two stage training is a process that can learn to be more robust and in the end it does affect the inference time. In YOLO specific terms, this technique is considered a \textit{Bag of Freebies}. \\
+
+TODO future work 2 stage training with 2 classes proper metrics and losses during training on weights and biases, what about 3 classes, what about multiple stages \\
+TODO future work maybe use feature points for small/outlier scratches and bounding boxes for large/normal scratches.
 
 
-\subsection{Hyperparameter Optimizations}
+\subsection{Hyperparameters}
+The default hyperparameters are set in accordance to the \textit{model size} and on normal datasets should get acceptable datasets. The dataset of scratches deviates from the usual datasets by the relative tiny size, usage of color channels for context information and size ratio of the bounding boxes. Therefore, the default hyperparameters do not deliver good results as seen on open datasets. \\
 
-\textbf{Model Size}
+\textbf{Model Size and Type:}
+YOLOv5 comes in 5 sizes: nano, small, medium, large, extra large. The nano models are targeted for edge and mobile devices, so for the current use case nano models are not suited.
+During initial stages of development small and medium models were used to quickly explore initial hypotheses, but later on the models were upgraded to medium and large size. As expected, larger models generalized better, but with increasingly higher training and inference times. The extra large model was able to provide a few FPS, so there should be no worries about the increased inference time. \\
+There also two types of models, the normal ones and the P6 models. The difference it that the P6 models have and extra h
+
+\textbf{Weights:}
+In theory
 
 \textbf{Hyperparameter evolution}
 
