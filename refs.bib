@@ -408,3 +408,14 @@ numpages = {18}
   ABSTRACT = {Object detection using remote sensing data is a key task of the perception systems of self-driving vehicles. While many generic deep learning architectures have been proposed for this problem, there is little guidance on their suitability when using them in a particular scenario such as autonomous driving. In this work, we aim to assess the performance of existing 2D detection systems on a multi-class problem (vehicles, pedestrians, and cyclists) with images obtained from the on-board camera sensors of a car. We evaluate several one-stage (RetinaNet, FCOS, and YOLOv3) and two-stage (Faster R-CNN) deep learning meta-architectures under different image resolutions and feature extractors (ResNet, ResNeXt, Res2Net, DarkNet, and MobileNet). These models are trained using transfer learning and compared in terms of both precision and efficiency, with special attention to the real-time requirements of this context. For the experimental study, we use the Waymo Open Dataset, which is the largest existing benchmark. Despite the rising popularity of one-stage detectors, our findings show that two-stage detectors still provide the most robust performance. Faster R-CNN models outperform one-stage detectors in accuracy, being also more reliable in the detection of minority classes. Faster R-CNN Res2Net-101 achieves the best speed/accuracy tradeoff but needs lower resolution images to reach real-time speed. Furthermore, the anchor-free FCOS detector is a slightly faster alternative to RetinaNet, with similar precision and lower memory usage.},
   DOI = {10.3390/rs13010089}
   }
+
+  @misc{focal_loss_paper,
+  doi = {10.48550/ARXIV.1708.02002},
+  url = {https://arxiv.org/abs/1708.02002},
+  author = {Lin, Tsung-Yi and Goyal, Priya and Girshick, Ross and He, Kaiming and Dollár, Piotr},
+  keywords = {Computer Vision and Pattern Recognition (cs.CV), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {Focal Loss for Dense Object Detection},
+  publisher = {arXiv},
+  year = {2017},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}

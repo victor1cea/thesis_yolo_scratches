@@ -126,9 +126,9 @@ TODO insert image here \\
 If a model is trained on windows instead of the original images, some pre- and post-processing steps for detection need to be considered. \\
 Before the detection, images need to be split in windows of similar shapes used in training. The strategy needs to be grid windowing, because all areas of the images need to be detected and this strategy makes reconstruction of the image easier. Also, an extra set of window between neighboring windows can be used to avoid scratch splitting. TODO ex image cu asta. \\
 After the detection, the windows with the respective detections need to be reconstructed to the original window. One naive way would be to draw detections on the windows and the reconstruct the windows into the original image. However, the trick is that with grid windowing every window has a predetermined position and the actual reconstruction of a new image can be avoided. In this implementation of grid windowing, the position of a window is specified by the upper left corner, width and height. This meta information can be easily encoded e.g. in the name of the file. Let's assume that a window of size 640x640 extracted from the corner TODO, TODO contains a detection. This detection can now be translated by TODO, TODO pixels and a valid detection for the original image is obtained. The translated detections can now be drawn directly in the original image.\\
- Note that the detection is in YOLO format and the position of the initial detection is expressed in normalized coordinates with respect to the window size.Therefore, a conversion of the detection from the YOLO label format to COCO format (TODO ref for formats) for the translation step is needed. After the translation, the detection can be converted back into the YOLO format.  Alternatively, the translation can be normalized with respect to the original image size.\\
- The naive way is at least 10 times slower, but it still was able to deliver a few FPS, which for this project is actually acceptable. A real-time detection is however possible with the second approach. \\
- Another post-processing step after the translation of the detections is the merging of detections. Because scratches might get split, the respective detections should be some overlapping bounding boxes. Those bounding boxes need to be also merged. The problem is that sometimes the bounding boxes might no overlap at all and be even a few pixels apart and that is why an extra set of windows as shown in TODO is used. This helps in connecting the disjointed detections. \\
+Note that the detection is in YOLO format and the position of the initial detection is expressed in normalized coordinates with respect to the window size.Therefore, a conversion of the detection from the YOLO label format to COCO format (TODO ref for formats) for the translation step is needed. After the translation, the detection can be converted back into the YOLO format.  Alternatively, the translation can be normalized with respect to the original image size.\\
+The naive way is at least 10 times slower, but it still was able to deliver a few FPS, which for this project is actually acceptable. A real-time detection is however possible with the second approach. \\
+Another post-processing step after the translation of the detections is the merging of detections. Because scratches might get split, the respective detections should be some overlapping bounding boxes. Those bounding boxes need to be also merged. The problem is that sometimes the bounding boxes might no overlap at all and be even a few pixels apart and that is why an extra set of windows as shown in TODO is used. This helps in connecting the disjointed detections. \\
 
 
 
@@ -138,7 +138,7 @@ It is important to make distinction between online and offline augmentations. Wi
 Basic augmentations methods like contrast and brightness manipulations are not affected by those constraint, but the random windowing is affected by this. Technically speaking, the random windowing is not an augmentation step, but it would be nice to be able to provide during each new epoch a new randomly shifted window for all scratches. This alone might stabilize the whole method and not face the fluctuations as discussed in TODO. TODO this some relevant future work, online random windowing if implemented like mosaic and cut-mix.\\
 Among the online augmentations, there is a special group that are able to circumvent some of the constraint. Those are some online augmentations that come out-of-the-box with YOLOv5 like CutMix and Mosaic. \\
 
-\textbf{Mosaic:} The mosaic augmentation is an online augmentation that takes 4 images and combines them into 1 image. This augmentation is built-in the YOLOv5 project and the constraint regarding the input for online augmentations is circumvented.
+\textbf{Mosaic:} The mosaic augmentation is an online augmentation that takes 4 images, which are randomly cropped and combines them into 1 image. This augmentation is built-in the YOLOv5 project and the constraint regarding the input for online augmentations is circumvented.
 The input images are also downscaled at different rates, which helps increase the variance . A trade-off is that the new image actually contains smaller scratches, which raises the question if this has an positive or negative impact. This question is discussed in-depth in the paragraph about the stretch augmentations. \\
 The parameters for this augmentation are only the probability of it being applies. The downscaling factors of the images, the number of the input images and the pick distribution are not parameterized. TODO future work improved mosaic paper https://iopscience.iop.org/article/10.1088/1742-6596/1684/1/012094/pdf
 Because of this unidimensional parametrization, the experiments were simply testing the effects of the mosaic augmentation at increments of 0.1 for the application probability. The results favored a application probability range between 0.5 and 0.8. This upper bound of 0.8 is a first indicator that the shrinking of the scratches might be problematic. Note that for higher application probabilities the results were actually ok e.g. the mAP@0.5 was only about 2\% smaller on average. The slightly more visible aspect was that for higher probabilities the bounding boxes were on average shorter, but still able to have an  IoU greater than 0.5. \\
@@ -176,7 +176,7 @@ The other way around is to use a squeeze augmentation method and this works by u
 TODO table short, medium, long, stretched
 
 
-\textbf{Constrast:} As stated in TODO, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
+\textbf{Contrast:} As stated in TODO, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
 In most experiments a contrast change of +/- 0.15 with any application probability helped the model be more robust and less false positive were detected. \\
 
 TODO show example images
@@ -226,7 +226,7 @@ TODO future work random windowing online
 The false positive were most of the time the bigger problem than the false negatives. With windowing the model has on average multiple chances to detect the same scratch due to the overlapping of the windows and therefore less scratches are missed. To push down the number of false positive, a two stage training approach can be used to feed the false positives to the model as a negative class. Note that this should not be confused with a two stage detection. \\
 In two stage training two datasets are used. The first one contains no background images, but the second one contains extends the first dataset by containing all the background windows too. Remember that for YOLO a background rate of 0-20\% is recommended, so only the first dataset can be normally used for training. Now the model can be trained a first time on the first dataset. Then an inference is performed on the second dataset and the false positives can be all marked as a second class. Now a third dataset is created, which contains the newly obtained 2 class labels, but also with no background windows. This dataset in an enhancement of the first dataset by marking all the false positive with a new class and introducing background windows that might further contain false positives. Finally, a second training experiment is performed with the third dataset. \\
 TODO drawing of 2 stage training \\
-This way the model learns in the second stage from the mistakes it made in first stage. The metrics on the second class are not very important, because this class is not really a class of objects, but rather a sinkhole for outliers and unexpected cases. One example of an unexpected case is the presence of a black border in the images. Those black borders can be eliminated in a pre-processing step, but then this pre-processing step needs to be also integrated in the inference. Also, this pre-processing steps might involve future manual adjustments, if in future datasets the border becomes thicker or thinner. With a two stage training approach all those cases can be learned by the model and manual tuning is avoided.\\
+This way the model learns in the second stage from the mistakes in made in the first stage and from relevant background windows. The similar concept of introducing meaningful background images can be seen also at TODO with the \textit{double windowing} approach. The metrics on the second class are not very important, because this class is not really a class of objects, but rather a sinkhole for outliers and unexpected cases. One example of an unexpected case is the presence of a black border in the images. Those black borders can be eliminated in a pre-processing step, but then this pre-processing step needs to be also integrated in the inference. Also, this pre-processing steps might involve future manual adjustments, if in future datasets the border becomes thicker or thinner. With a two stage training approach all those cases can be learned by the model and manual tuning is avoided.\\
 TODO show black border \\
 After the second stage the initial number of false positives drops by 80\% on average, but there is a slight problem with the metrics and validation losses. Because the second class is actually a sinkhole, the metrics and validation losses from this class do not have a relevant meaning. Because YOLOv5 outputs by default the metrics and losses aggregated and not for each class individually, it is difficult to track the second training experiment. \\
 TODO drawing of 2 stage training alternative or maybe combine with the one above\\
@@ -243,39 +243,79 @@ The default hyperparameters are set in accordance to the \textit{model size} and
 \textbf{Model Size and Type:}
 YOLOv5 comes in 5 sizes: nano, small, medium, large, extra large. The nano models are targeted for edge and mobile devices, so for the current use case nano models are not suited.
 During initial stages of development small and medium models were used to quickly explore initial hypotheses, but later on the models were upgraded to medium and large size. As expected, larger models generalized better, but with increasingly higher training and inference times. The extra large model was able to provide a few FPS, so there should be no worries about the increased inference time. \\
-There also two types of models, the normal ones and the P6 models. The difference it that the P6 models have and extra h
+There also two types of models, the normal ones and the P6 models. The difference it that the normal models have three output layers called $P3, P4, P5$, while the P6 models have also a fourth layer called $P6$. The P6 models showed consistently a slightly higher mAP@0.5:0.95 of about 0.02, all this without adding significant increase in training time. Therefore, the P6 is the default network type in all experiments showed.
+
+TODO table with epoch times
+TODO show big mAP plots
 
 \textbf{Weights:}
-In theory
+For a unique dataset that contains bounding boxes with a disproportionate shape ratio and context information encoded in the color channels, a training from default weights seems very promising, but this works only if the dataset is very large. The only solution is to use the pretrained weights, which provided better results than the default weights.  \\
+TODO show plots
 
 \textbf{Hyperparameter evolution}
 
-\textbf{Batch Size}
-The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic (TODO source). For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favour of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size. \\
+\textbf{Batch Size:}
+The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic (TODO source). For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favor of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size.
+The explanation is that higher batch sizes help with a better batch normalization. \\
 TODO show results \\
 
-\textbf{Learning Rate and Gradient}
+\textbf{Learning Rate and Gradient:}
 The initial experiments showed high jumps after each epoch, so a switch from the standard stochastic gradient descent to AdamW has been made. The documentation recommends for AdamW to change the learning rate from 0.01 to 0.001, but a step size of 0.0001 showed a more stable evolution from epoch to epoch.
 TODO maybe show some results
 
-\textbf{Loss Function}
+\textbf{Loss Function:}
+The loss functions has three components:
+\begin{enumerate}
+  \item class loss
+  \item box loss
+  \item objective loss
+\end{enumerate}
+%source https://github.com/ultralytics/yolov5/issues/5401
+
+For the class loss the Binary Cross Entropy (BCE) loss is calculated for each class individually and then all individual BCE class losses are summed together. This sum can also be scaled by an optional coefficient. The available hyperparameters are the BCE positive weights coefficient $cls\_pw$ and the optional sum coefficient $cls$. The BCE positive weights coefficient acts  only on the true positive cases. In general if $cls\_pw>1$ the number for increases recall and decreases precision and if $cls\_pw<1$ then it works the other way around. \\
+The class loss is only relevant if multiple classes are used, just like in the second stage of the two stage training approach. The $cls$ hyperparameter should be in this case low, because the second class is actually a sinkhole correcting mistakes from the first stage. The recall is usually not a problem, because the scratch may appear in multiple windows, so the model has multiple chances to detect the same scratch. With this observations in mind and some training experiments, it has been found that for the second training stage the class loss hypermeters should be as $cls\_pw \in [0.75, 1.0]$ and $cls \in [0.0, 0.2]$ \\
+The objective loss is computed in a similar way by computing the BCE loss for each image and adds each image loss into a sum. The difference is that the objective loss is calculated on an images basis, while the class loss is calculated on a class basis. The hyperparameters available are $obj\_pw$ and $obj$, which are applied just like the $cls\_pw$ and $cls$ hyperparameters, respectively. In order to combat the high rate of false positive a $obj\_pw \in [0.5, 0.9]$ is optimal. To heavily punish the false positives and false negative a $obj \in [1.5, 2]$ is optimal. \\
+The box loss is used to calculate how good the predicted bounding boxes are fitted to the ground truth bounding boxes. This loss is based on the Generalized Intersection over Union (GIoU). The box loss has only on hyperparameter available, $box$, which acts as scaling coefficient for the loss. The pixel perfect localization of the bounding boxes is not the main point of this project and usually a 70\% of the default value is a good value. \\
+After the objective and class loss, the Focal Loss (FL) \cite{focal_loss_paper} function is applied. The goal of this function is to shift the focus from positive to negative examples and this can be tuned the $fl\_gamma$ hyperparameter. Usually, a $fl\_gamma \approx 0.5$ is good. \\
+The general loss function with the respective hyperparameters can be sketched as:
+
+\begin{equation}
+  \begin{array}{l}
+    L_{obj} = FL(obj * BCE(obj\_pw)) \\
+    L_{cls} = FL(obj * BCE(cls\_pw)) \\
+    L_{box} = box * GIoU \\
+    L = L_{obj} + L_{cls} + L_{box} \\
+  \end{array}
+\end{equation}
+
+TODO maybe add images from $https://gombru.github.io/2018/05/23/cross_entropy_loss/$ or a general formula
+
+TODO CCE loss for mutually exclusive as future work $https://github.com/ultralytics/yolov5/issues/5401$
+TODO box loss alternatives
 
 
-\textbf{IoU threshold}
-
-
-TODO obiective dataset:
-scratches position
-scratches length should have variety (prin stretch si prin window cuts)
-scratch strength variety (sa inventez ceva)
-
-easy source code modifications (la metrics mai ales)
-dataset format
-dataset postprocessing (black border)
+\textbf{IoU threshold:}
+maybe later \\
 
 
 
-\subsection{Development Environment \& Setup}
-TODO draft available, write it at the end
+\textbf{Hyperparameter Evolution:}
+YOLOv5 offers hyperparameter optimization method based on a genetic algorithm. This should in theory partially automate the task of hyperparameter optimization, but this required thousands of GPU hours if the default parameters are set as starting point. From a time perspective it was better to simply manually run some experiments and then take an educated guess. \\
+Towards the end of this project the hyperparameters were better optimized and a better starting point with a  strongly reduced search range could be provided to the hyperparameter evolution script. This helped for minor optimizations. \\
+TODO show an output
+TODO source/cite this $https://docs.ultralytics.com/tutorials/hyperparameter-evolution/$
 
-Bounding Box Debugger
+\textbf{Best Weights:}
+The best weights are determined by the \textit{model fitness} function:
+\begin{equation}
+f = w_p * precision + w_r * recall + w_m * mAP@0.5 + w_M * mAP@0.5:0.95
+\end{equation}
+By default, $w_p=0, w_r=0, w_m=0.1, w_M=0.9$, which is actually fine, because the mAP is calculated based on the precision and recall. In case of the second stage of the two stage training process it's better to save the weights periodically and test them using a custom metrics calculator. \\
+
+
+\subsection{Development Environment}
+The scope of this section is to highlight some nice features of the used tools that were helpful during the development process. One important tool was FiftyOne \cite{fiftyone_git}, which can be used for dataset versioning and visualization. This tool supports advanced visualization filters and dataset format conversion. In the beginning, multiple YOLO versions were tested and each of them had a slightly different format and with FiftyOne the datasets could be quickly converted. The FifityOne filters could be use to see only a subset of the detections e.g. low confidence detections and it helped understand the consequences of different approaches.  \\
+For annotation CVAT was great in combination with FiftyOne, because datasets in any format could be uploaded directly to CVAT server. After the annotation process is finished, the newly annotated datasets could be imported back into FiftyOne's database. \\
+For logging Weights \& Biases is used, because YOLOv5 has integrated support for this platform. With Weights \& Biases it is easier to share training results and generate figure of training reports. A YOLOv5 specific logging feature is the \textit{Bounding Box Debugger}, which can be used to see how the model predicts on the validation set for every epoch that saves the weights. This feature is very helpful for the two stage training, when metrics and loss results lose meaning. \\
+TODO BB debugger fig here \\
+A great alternative is CoreML, which is supported also by YOLOv5. The classic Tensorboard tool works too, but the limited features makes it difficult to work with a higher number of experiments. \\
