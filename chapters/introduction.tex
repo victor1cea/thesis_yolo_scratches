@@ -85,16 +85,31 @@ Later on, different research groups developed their own YOLO-based object detect
 This sections provides an overview of the main challenges faced during the development and research of the YOLO-based object detector. The main challenge can be usually divided in smaller, more specific sub-challenges, which will be discussed in depth in the next chapter. In no particular order of importance, the main challenges are:
 
 \textbf{Small dataset:}
-As seen in section TODO, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only TODO images contain scratches. \\
+As seen in section TODO, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only a fraction of the images contain scratches. \\
 A fortunate thing is that the scratches can fit very good in bounding boxes and no extra precision will be provided by the more tedious, time-consuming segmentation masks. This leads to the next point of labeling. \\
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=0.65\columnwidth]{images/introduction/dataset_sizes}
+\caption{The dataset on hand does not compare with the huge open datasets.}
+\label{intro:dataset_sizes}
+\end{figure}
 
 \textbf{Identifying relevant scratches:}
 % alternative:  consistency of the labels
-The scratches present in the dataset are sometimes very faded and annotating those scratches leads to an overly sensitive model. From a practical point of view, those scratches might not even affect the actual printed object. Thereofore, only prominent and deep scratches need to be marked. \\
+The scratches present in the dataset are sometimes very faded and annotating those scratches leads to an overly sensitive model. From a practical point of view, those scratches might not even affect the actual printed object. Therefore, only prominent and deep scratches need to be marked. \\
 This is easier said than done, because humans have problems separating the weak scratches from strong scratches. This separation task is just an alternative version of Sorites Paradox actually. In figure TODO, a gradient from stronger scratches to weaker ones can be seen. How can one determine an objective threshold between the stronger and weaker scratches? \\
-Also being incosistent with the annotation e.g. first images contain weaker scratches than the final images, is another problem. This incosistency would only "confuse" the model.
-The objectivness and consistency are some key aspects in this situation, so some kind of metric is needed to ensure this.\\
+Also being inconsistent with the annotation e.g. first images contain weaker scratches than the final images, is another problem. This inconsistency would only "confuse" the model.
+The objectiveness and consistency are some key aspects in this situation, so some kind of metric is needed to ensure this.\\
 In the usual open datasets, the objects are not in a transitory state from barely visible to visible, which makes in this point of view the dataset on hand more unique. \\
+
+\begin{figure}[!h]
+\centering
+\captionsetup{justification=centering,margin=2cm}
+\includegraphics[width=\columnwidth]{images/introduction/original_scratch_fades}
+\caption{A "gradient" of scratches. Which scratches are strong enough to be used for training?}
+\label{intro:original_scratch_fades}
+\end{figure}
 
 \textbf{Domain Knowledge Integration:}
 As seen in figure TODO, two close edges might look like a scratch, but the bitmask can be used to clarify the situation. This exact process of comparing the layer image with the respective bitmask is the motivation of including also the bitmask for training and inference. The problem is that most models take exactly one image and a file with labels as input and now a bitmask needs to be included somehow.\\

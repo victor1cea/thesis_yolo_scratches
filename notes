@@ -52,6 +52,17 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
 320 -> 14 s, 2 s, 105 s, 10260 im, 10 s
 
 
+\begin{figure}[!h]
+\centering
+\captionsetup{justification=centering,margin=2cm}
+\includegraphics[width=\columnwidth]{TODO}
+\caption{TODO}
+\label{TODO}
+\end{figure}
+
+
+24, 29, 30, 33, 36
+
 
 
 

@@ -7,17 +7,31 @@ TODO: verallgemeinern mit scratches \\
 \textbf{The first challenge:}
 As mentioned \ref{intro:challenges}, some scratches are weaker and should not be marked as actual scratches to not make the model too sensitive. A sensitive model would lead to many false positive detections like a thicker edge or an oxidation spot. The main goal would be to find a metric that can evaluate the prominence of the scratches. With such a metric, each annotated scratch will have a prominence value and therefore a minimum threshold could be used to eliminate the weaker scratches.
 
+
+
 \textbf{The solution:}
 A proper metric should measure how dark a scratch line is with respect to it's neighboring background. Also, the metric should not take in consideration the length or width of the scratch.
 The metric developed for this project works as follows:
 Crop the bounding box from the image. Because the image is a grayscale, the cropped image will have only 1 channel i.e. it can be interpreted as a 2D array. The rows of the array are normalized and the mean row is then calculated. For clarification: the mean row is obtained by summing all rows into 1 row and dividing each element of that row by the total number of rows. The center values of the mean row are usually lower than the values from the start or end of the mean row, because the bounding box has the scratch with darker pixels positioned in the center. The plot of the mean row would look like the hyperbole of $f(x)=x^2$. The mean row is then multiplied by -1 and the plot would look more similar to $f(x)=-x^2$. This mean row multiplied by -1 can be interpreted as single pulse of a signal and the prominence of this signal pulse can be calculated by using special signal processing functions like TODO. \\
-TODO figure of metric here. \\
+\begin{figure}[!h]
+\centering
+\captionsetup{justification=centering,margin=2cm}
+\includegraphics[width=\columnwidth]{images/implementation/prominence_metric}
+\caption{Sketch of the prominence metric computation.}
+\label{impl:prominence_metric}
+\end{figure}
+
 
 Darker scratches will tend to have a higher prominence value than the faded ones. Now the only thing left to do is to choose a threshold and filter out the weak scratches. \\
 During the filtering process, it was obeserved that some scratches had a surprisingly low prominence value. Usually, this was because the bounding box was not properly sized and the edges of a printed part were contained. Because the edges are dark, this would make the signal curve flatter and therefore the prominence value would be smaller. A resizing or centering of the bounding box solved this problem.
 
-TOOD figure of bb with edges here. \\
-
+\begin{figure}[!h]
+\centering
+\captionsetup{justification=centering,margin=2cm}
+\includegraphics[width=\columnwidth]{images/implementation/marked_scratch_fades}
+\caption{The prominence metric in action the same scratches from figure \ref{intro:original_scratch_fades}. Weaker scratch tend to have a lower metric score.}
+\label{impl:marked_scratch_fades}
+\end{figure}
 
 \subsection{Bitmask Integration}
 
@@ -110,7 +124,7 @@ The avoidance of scratch splitting was somewhat helpful when training with bigge
 
 TODO example of background vs double windowing \\
 
-Another interesting discovery is that it's better to split the dataset after the windowing has been done. This ensures a more similar distribution between the splits. This observation alone stabilized the training experiments very much. \\
+Another interesting discovery is that it's better to split the dataset after the windowing has been done. This ensures a more similar distribution between the splits. This observation alone stabilized the training experiments very much. TODO mixing is better \\
 
 
 
@@ -178,6 +192,7 @@ TODO table short, medium, long, stretched
 
 \textbf{Contrast:} As stated in TODO, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
 In most experiments a contrast change of +/- 0.15 with any application probability helped the model be more robust and less false positive were detected. \\
+TODO zi ca pe primul layer doar
 
 TODO show example images
 
@@ -197,6 +212,7 @@ All the above augmentation methods are helpful for the given use case of scratch
 \textbf{Occlusions:} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask. TODO cite papers of the augs
 
 \textbf{HSV augmentation:} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in TODO. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
+TODO workaround on the first channel does not work because grayscale
 
 \textbf{Shears and Rotations:} One main characteristic of the scratches is the verticality. Image shearing or rotations will generate images that are outside of the distribution and will force the model to learn about scratches horizontal and diagonal scratches that do not actually exist. Another problem is that the anchors of the bounding boxes will not be properly optimized, because a diagonally placed scratch will not a shorter and wider bounding box. This mean that the fitting of bounding boxes will get worse.
 
@@ -216,11 +232,8 @@ TODO this is more technical, is it ok?
 TODO images from \ref{roboflow_yolov4_augs}
 TODO What is the Bag of Freebies in YOLOv4?
 TODO talk about Bag of Specials
-TODO future work iou threshold
 
 TODO talk about anchors in YOLO in detection.tex
-
-TODO future work random windowing online
 
 \subsection{Two Stage Training}
 The false positive were most of the time the bigger problem than the false negatives. With windowing the model has on average multiple chances to detect the same scratch due to the overlapping of the windows and therefore less scratches are missed. To push down the number of false positive, a two stage training approach can be used to feed the false positives to the model as a negative class. Note that this should not be confused with a two stage detection. \\
