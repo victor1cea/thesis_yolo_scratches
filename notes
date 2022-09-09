@@ -60,19 +60,12 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
 \label{TODO}
 \end{figure}
 
-
-24, 29, 30, 33, 36
-
-
-
-
-
-
-motivation, goals.
-sa nu folosesc yolov5 in tuitlul de la introduction.
-machine learning for object detection
-YOLO based nu yolov5 based
-
-challenge based la 3
-
 conclusions pt urmatorul student
+
+23 + 250 + 22
+
+lista de experimente:
+full image pt windowing
+fara mosaic
+train on short, train on short with stretch
+learning rate prost

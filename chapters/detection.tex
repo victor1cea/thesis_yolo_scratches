@@ -4,20 +4,40 @@ YOLO (\textbf{Y}ou \textbf{O}nly \textbf{L}ook \textbf{O}nce) is a family of sin
 It is important to note, that there are multiple versions such as
 YOLOv3 \cite{yolov3_paper}, YOLOv4 \cite{yolov4_paper} and YOLOv7 \cite{yolov7_paper}, but each version may also have multiple implementations e.g. for YOLOv3 there is the Darknet implementation \cite{darknet_git} and also the implementation by Ultralytics \cite{yolov3_ultralytics_git}. One established implementation, that proved good results with a huge community and many features, is the Ultralytics YOLOv5 implementation \cite{yolov5_git}.
 
+\begin{figure}[!h]
+  \centering
+  \captionsetup{justification=centering,margin=2cm}
+  \includegraphics[width=\columnwidth]{images/detection/timeline}
+  \caption{asdfdf}
+  \label{sdfdfd}
+\end{figure}
 
-\subsection{YOLO architecture}
 
-In this subsection the general architecture and features of more current YOLO detectors will be presented and some significant differences between versions will be highlighted. \\
-Current YOLO networks have three main components: the backbone, the neck and the head. From a high-level point of view, the backbone extracts features from an input image, then the neck takes the features from the backbone at different stages and tries to aggregate or distinguish those features to finally pass them to the head. The head has a simple role to generate the predictions i.e. the bounding boxes with the respective confidence score. \\
-In YOLOv2 the backbone was just a simple network of 19 convolutional layers and 5 max pooling layers, simply named Darknet-19 \cite{yolov2_paper}. In the next  version, the backbone had very straightforward improvement idea: increase the depth of the network. The new feature extractor is called Darknet-53 and as the name suggests, it had 53 convolutional layers \cite{yolov3_paper}. In YOLOv4, the Darknet-53 is modified to use CSPNet, which lead to the creation of CSPDarknet53. In order to reduce parameters and layers without impacting performance, YOLOv5 replaced the first three layers from CSPDarknet53 with a Focus layer \cite{yolov5_focus}. \\
+\subsection{YOLO architectures}
+
+In this subsection the general architecture and features of the YOLO detectors will be presented and some significant differences between versions will be highlighted. \\
+The modern YOLO networks contain three main components: the backbone, the neck and the head. From a high-level point of view, the backbone extracts features from an input image, then the neck takes the features from the backbone at different stages and tries to aggregate or distinguish those features to finally pass them to the head. The head has a simple role to generate the predictions i.e. the bounding boxes with the respective confidence score. \\
+The first YOLO version, now known as YOLOv1, is relatively small in size with only 24 convolutional layer followed by 2 fully connected layers. This design was inspired by the GoogLeNet model \cite{googlenet_paper}, but the twist is that the inception modules have been replaced with $1x1$ reduction layers followed by a $3x3$ convolutional layer. The distinction between the three aforementioned main components is not clear in the early stages of YOLO object detectors.
+
+\begin{figure}[!h]
+\centering
+\captionsetup{justification=centering,margin=2cm}
+\includegraphics[width=0.8\columnwidth]{images/detection/yolov1_arch}
+\caption{The simple, yet effective YOLOv1 architecture.}
+\label{detection:yolov1_arch}
+\end{figure}
+
+
+In YOLOv2 the backbone is a simple network of 19 convolutional layers and 5 max pooling layers, simply named Darknet-19 \cite{yolov2_paper}. The backbone alone is almost as big as the full YOLOv1 network. In order to improve training convergence batch normalization has been implemented and the bounding box have now a prior on dimension and location, which make the network more adaptable. \\
+ In the next  version, the backbone had very straightforward improvement idea to increase the depth. The new backbone is called Darknet-53 and as the name suggests, it had 53 convolutional layers \cite{yolov3_paper}. In YOLOv4, the Darknet-53 is modified to use CSPNet, which lead to the creation of CSPDarknet53. In order to reduce parameters and layers without impacting performance, YOLOv5 replaced the first three layers from CSPDarknet53 with a Focus layer \cite{yolov5_focus}. \\
 
 \begin{figure}
 \includegraphics[width=\textwidth]{images/yolo_images/yolo_compare}
 \caption{An overview of the structure of YOLOv3-5 networks.}
 \end{figure}
 
-The neck component was first used in YOLOv3 with a simple feature pyramid network (FPN), which was then replaced by a PANet SPP network \cite{panet_paper, spp_paper}, but in YOLOv5 the neck is a PANet FPN network. \\
-The head is the single component that remained unchanged. The head is just a small fully convolutional network, known as YOLO head, that predicts the bounding boxes. The YOLO head has some parameters, called anchors, that are used to give the head a rough idea of the general shape of the bounding boxes. Those parameters can be optimized before training.  More details about differences between YOLOv3-5 versions are in \cite{yolo_compare}.\\
+A more complex neck component was first used in YOLOv3 with a simple feature pyramid network (FPN), which was then replaced by a PANet SPP network \cite{panet_paper, spp_paper}, but in YOLOv5 the neck is a PANet FPN network. \\
+The head is the single component that remained almost unchanged. This component is just a small fully convolutional network, known as YOLO head, that predicts the bounding boxes. The YOLO head has some parameters, called anchors, that are used to give the head a rough idea of the general shape of the bounding boxes. Those parameters can be optimized before training.  More details about differences between YOLOv3-5 versions are in \cite{yolo_compare}.\\
 
 TODOs:
 -YOLOv5 network size
@@ -32,15 +52,19 @@ YOLOv5 is a version that not only changed the architecture: YOLOv5 is developed 
 This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and comes with nice features for development as mentioned above. Of course there are some versions, that were not even mentioned such as YOLOR \cite{yolor_paper} and \cite{yolovx_paper}, but YOLOv5 at the time of writing was the most mature and overall established project. \\
 
 
+
+
+\subsection{Labels}
+YOLO detectors generally use a distinctive format that consists of 5 mandatory and 1 optional values: \textit{x, y, w, h, class, conf (optional)}. The first 2 values \textit{(x, y)} are the coordinates of the center of the bounding box normalized with respect to the width and height of the image. The next values \textit{w,h} are the width and height of the bounding box, also normalized with respect to the width and height of the image. The next value \textit{class} is the class id. Finally, the value \textit{conf} is used only for detected bounding box to store the confidence of the detection. If \textit{conf} is not given, then it can be assumed that the bounding box is a ground truth and not a detection. Each version might have a slight variation of this notation format, but conceptually they are all the same. \\
+This format make the labels invariant to changes of image ratio and resolution.
+
+TODO talk about other label types
+
 \begin{figure}[!h]
   \includegraphics[width=\textwidth]{images/yolo_images/yolo_labels_zidane}
   \centering
   \caption{Example of YOLO bounding box \cite{yolov5_train_custom}}
 \end{figure}
-
-\subsection{Labels}
-YOLO detectors generally use a distinctive format that consists of 5 mandatory and 1 optional values: \textit{x, y, w, h, class, conf (optional)}. The first 2 values \textit{(x, y)} are the coordinates of the center of the bounding box normalized with respect to the width and height of the image. The next values \textit{w,h} are the width and height of the bounding box, also normalized with respect to the width and height of the image. The next value \textit{class} is the class id. Finally, the value \textit{conf} is used only for detected bounding box to store the confidence of the detection. If \textit{conf} is not given, then it can be assumed that the bounding box is a ground truth and not a detection. Each version might have a slight variation of this notation format, but conceptually they are all the same. \\
-This format make the labels invariant to changes of image ratio and resolution.
 
 \subsection{Metrics \& Benchmarks}
 In this section some key concepts regarding the evaluation of detections will be defined in order to avoid any sort of confusion and then the evaluation metrics will be presented. \\
@@ -48,7 +72,7 @@ The first key concept is the Intersection over Union (IoU), which expresses, how
 
 \begin{figure}[!hb]
 
-  \includegraphics[width=0.75\textwidth]{images/iou}
+  \includegraphics[width=0.5\textwidth]{images/iou}
   \centering
   \caption{IoU formula \cite{map_tutorial}}
   \label{fig:iou}

@@ -47,7 +47,7 @@ TODO insert figure here
 
 TODO: OD with NN, bb and semantic segmentation, vezi bookmark nou
 \subsection{Object Detection (With Neural Networks)}
-There are a variety of techniques used to perform object detection. Initially, object detection was posed as a non-neural computer vision problem, but this required a constant and tedious manual tuning of parameters. In order to avoid this tuning, feature-based machine learning algorithms were developed e.g. Viola-Jones algorithm OR SEE EMAIL  \cite{viola_joines_paper}. In this way the parameter tuning was partially automatized, but it still required manual tuning like selecting the optimal Haar features for the Viola-Jones algorithm.
+There are a variety of techniques used to perform object detection. Initially, object detection was posed as a non-neural computer vision problem, but this required a constant and tedious manual tuning of parameters. In order to avoid this tuning, feature-based machine learning algorithms were developed e.g. Viola-Jones algorithm  \cite{viola_joines_paper}. In this way the parameter tuning was partially automatized, but it still required manual tuning like selecting the optimal Haar features for the Viola-Jones algorithm.
 One step further in this direction was the introduction of deep-learning based methods, which use a neural network at heart. A trained neural network would be albe to detect objects with way less parameter tuning. The drawback is that a considerable amount of labeled data for training is now required, which mostly is manually labeled. Luckily, today there are many open source labeled datasets that easily contain hundreds of thounsands of images e.g. ImageNet Dataset \cite{imagenet_site}, OpenImages Dataset \cite{openimages_site}. \\
 Because of the already labeled datasets, the manual labor for deep-learning based methods was greatly reduced and the focus shifted towards those kind of methods, leading to the creation of many innovative models. One distinction among deep-learning based methods, regarding data labeling, is that the objects can be labeled with bounding boxes or segmentation masks. Models that use bounding boxes tend to train and predict faster, while models with segmentation masks will have the benefit of optimizing predictions to a pixel level. Another consideration would be that, if manual labeling is required, drawing bounding boxes is easier and less error prone than drawing an outline for segmentation masks. \\
 
@@ -86,22 +86,21 @@ This sections provides an overview of the main challenges faced during the devel
 
 \textbf{Small dataset:}
 As seen in section TODO, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only a fraction of the images contain scratches. \\
-A fortunate thing is that the scratches can fit very good in bounding boxes and no extra precision will be provided by the more tedious, time-consuming segmentation masks. This leads to the next point of labeling. \\
-
 \begin{figure}[!h]
 \centering
-\includegraphics[width=0.65\columnwidth]{images/introduction/dataset_sizes}
+\includegraphics[width=0.4\columnwidth]{images/introduction/dataset_sizes}
 \caption{The dataset on hand does not compare with the huge open datasets.}
 \label{intro:dataset_sizes}
 \end{figure}
+A fortunate thing is that the scratches can fit very good in bounding boxes and no extra precision will be provided by the more tedious, time-consuming segmentation masks. This leads to the next point of labeling. \\
+
+
 
 \textbf{Identifying relevant scratches:}
 % alternative:  consistency of the labels
 The scratches present in the dataset are sometimes very faded and annotating those scratches leads to an overly sensitive model. From a practical point of view, those scratches might not even affect the actual printed object. Therefore, only prominent and deep scratches need to be marked. \\
 This is easier said than done, because humans have problems separating the weak scratches from strong scratches. This separation task is just an alternative version of Sorites Paradox actually. In figure TODO, a gradient from stronger scratches to weaker ones can be seen. How can one determine an objective threshold between the stronger and weaker scratches? \\
 Also being inconsistent with the annotation e.g. first images contain weaker scratches than the final images, is another problem. This inconsistency would only "confuse" the model.
-The objectiveness and consistency are some key aspects in this situation, so some kind of metric is needed to ensure this.\\
-In the usual open datasets, the objects are not in a transitory state from barely visible to visible, which makes in this point of view the dataset on hand more unique. \\
 
 \begin{figure}[!h]
 \centering
@@ -111,9 +110,73 @@ In the usual open datasets, the objects are not in a transitory state from barel
 \label{intro:original_scratch_fades}
 \end{figure}
 
+The objectiveness and consistency are some key aspects in this situation, so some kind of metric is needed to ensure this.\\
+In the usual open datasets, the objects are not in a transitory state from barely visible to visible, which makes in this point of view the dataset on hand more unique. \\
+In the table below some relevant statistics about the dataset are presented:
+\begin{center}
+\begin{tabular}{ ||c|c|| }
+\hline
+property & value \\ [0.5ex]
+\hline\hline
+total images & 2295 \\
+images with scratches & $\approx$ 300 \\
+total scratches & $\approx$ 650 \\
+scratch average length & 138 px \\
+scratch median length & 117 px \\
+scratch min length & 24 px \\
+scratch max length & 630 px \\
+scratch length std. deviation & 104 \\
+image size & $2592 \times 1440$ \\
+bitmask size & $1800 \times 1000$ \\
+
+\hline
+\end{tabular}
+\end{center}
+
+
 \textbf{Domain Knowledge Integration:}
 As seen in figure TODO, two close edges might look like a scratch, but the bitmask can be used to clarify the situation. This exact process of comparing the layer image with the respective bitmask is the motivation of including also the bitmask for training and inference. The problem is that most models take exactly one image and a file with labels as input and now a bitmask needs to be included somehow.\\
-Another problem is that small artifacts from previous layers can be visible in the current layer, which again might look like a scratch. This means that looking at previous bitmasks is also helpful during labeling. Therefore, the model needs to be aware also of previous bitmasks. Now the problem from the previous paragraph evolved into including multiple bitmasks. \\
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.4\linewidth]{images/introduction/bitmask_integration/layer_00091}
+  \caption{A crop from a layer image}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.4\linewidth]{images/introduction/bitmask_integration/bitmask_00091}
+  \caption{The corresponding bitmask}
+\end{subfigure}
+\caption{Two closely positioned edges generate can look like a scratch, but the bitmask clearly shows that there is actually no scratch.}
+\label{intro:double_edge}
+\end{figure}
+
+Another problem is that small artifacts from previous layers can be visible in the current layer, which again might look like a scratch. This means that looking at previous bitmasks is also helpful during labeling. Therefore, the model needs to be aware also of previous bitmasks. Now the problem from the previous paragraph evolved into including multiple bitmasks. This situation can be seen in figure \ref{intro:image_artifacts} \\
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=.5\linewidth]{images/introduction/bitmask_integration/layer_00830}
+  \caption{Layer image}
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=.5\linewidth]{images/introduction/bitmask_integration/bitmask_00830}
+  \caption{Current bitmask}
+\end{subfigure}
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=.5\linewidth]{images/introduction/bitmask_integration/bitmask_00829}
+  \caption{Previous bitmask}
+\end{subfigure}
+\caption{In the layer image dark lines that look like scratches are visible, but the current bitmask does not indicate the the presence of gap between two edges like in figure \ref{intro:double_edge}. However the previous bitmask shows where the dark lines from the layer image actually come from.}
+\label{intro:image_artifacts}
+\end{figure}
+
+Other anomalies like dark spots from the an uneven oxidation are also possible. An in some cases those spots have a thin and tall shape that also can be confused with a scratch. Such an example can be seen in figure \ref{intro:layer_oxidation}.
 
 
 \textbf{Choosing the neural network:}
@@ -124,19 +187,19 @@ There are currently a multitude of YOLO versions developed by different research
 \begin{figure}[ht]
   \centering
 
-  \begin{subfigure}{\textwidth}
+  \begin{subfigure}{0.85\textwidth}
     \includegraphics[width=\textwidth]{images/layer_dark_scratch}
     \caption{Layer with dark spots.}
 
   \end{subfigure}
 
-  \begin{subfigure}{\textwidth}
+  \begin{subfigure}{0.85\textwidth}
     \includegraphics[width=\textwidth]{images/layer_dark_scratch_cropped}
-    \caption{Zoomed to the upper left corner of the layer. The green bounding box is safely a dark spot, but the blue bounding box is an ambiguous case.}
+    \caption{Zoomed to the upper left corner of the layer. The green bounding box is safely a dark spot, but the blue bounding box is can be an ambiguous case.}
   \end{subfigure}
 
-  \caption{Dark spot or scratch?}
-  \label{fig:layer_dark_scratch}
+  \caption{Example of full layer image. This layer contains some dark oxidation spots, which in turn might be also problematic, especially if they have a thinner and taller shape.}
+  \label{intro:layer_oxidation}
 
 
 \end{figure}
