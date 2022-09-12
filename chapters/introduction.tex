@@ -1,51 +1,75 @@
 \section{Introduction}
 
+Additive manufacturing (or 3D Printing) is an emerging technology, in which different objects are printed in layers having a 3D model as a reference. This technology made rapid prototyping faster and enabled the creation of custom-shaped objects. However this process is not always perfect and printing errors are to be expected.Modern 3D printers come with vision systems that can capture the printing process, so this defect detection task can be posed from the perspective of a computer vision task. \\
+The patterns of the defects can be observed and a classical detection algorithm e.g. Template Matching can be tuned to detect a specific type of pattern. The shortcoming of this approach is the lack of generalization. Therefore, the algorithm requires manual tuning each time a new pattern appears or the dataset is changed. A more modern approach to this modern is to use convolutional neural networks. \\
+In the current setup, the 3D printer uses binder jetting technology. This type of printing uses two materials: a powder based material and a binding agent. The printer head moves along the printing surface and deposits alternating layers of sand and binding agent in accordance to a model \cite{binder_jetting}. This technology stands out by being able to print very large objects. \\
+\begin{figure}[!h]
+  \centering
+  \captionsetup{justification=centering,margin=2cm}
+  \includegraphics[width=0.5\linewidth]{images/introduction/binderjetting}
+  \caption{A sketch of a 3D printer}
+  \label{TODO}
+\end{figure}
+In this thesis a YOLO-based neural network solution is proposed and explored for this automatization procedure.  \\
 
+\subsection{Considered Dataset}
+As mentioned in the previous paragraphs, a 3D printer contains a camera to track the printing process. This camera is usually positioned directly above the printing surface and can capture each layer individually. In the presented images, the printing defects are vertical scratches, which are also visible on grayscale images as dark lines. In figure \ref{fig:layer_00325_marked_cropped} the printing defects are highlighted with some bounding boxes. \\
 
-Additive manufacturing (or 3D Printing) is an emerging technology, in which
-different objects are printed in layers having a 3D model as a reference. This technology made rapid prototyping faster and enabled the creation of custom-shaped objects. However this process is not always perfect and printing errors are to be expected. Manually reviewing every print job is a tedious labor work and naturally the desire of automatization of anomaly detection rose. \\
-One interesting 3D printing technique, sand 3D printing, stands out by not using any heat. This allows printing objects of very large sizes, but comes with a specific type of printing defects: scratches. \\
-In this thesis a YOLO-based neural network solution is proposed and analyzed for this automatization procedure. \\
-TODO: motivation
-TODO: one abstraction layer above
-
-TODO: insert example of scratch
-
-
-\subsection{Printing process}
-The 3D printer in the experiments at hand is sand based, more specifically binder jetting technology. With this technology, a layer is printed by laying a powder bed, then the printer applies drops of binding agent in regions of the bed to bond the powder particles together \cite{binder_jetting}. For each layer a bitmask is provided, which shows the regions that need to be printed. \\
-In order to better track the printing process, the 3D printer has an internal camera that captures each printed layer. The captured images are then calibrated. In figure \ref{fig:layer_bitmask} a printed layer and the respective bitmask can be seen.\\
-In our case the printing errors are scratches on the printed surfaces like in figure \ref{fig:layer_00325_marked_cropped}. \\
-
-TODO insert figure here
-% \begin{figure}[ht]
-%   \centering
-%
-%   \begin{subfigure}{\textwidth}
-%     \includegraphics[width=\textwidth]{images/layer_00325}
-%     \caption{Calibrated capture of a layer.}
-%     \label{fig:layer}
-%   \end{subfigure}
-%
-%   \begin{subfigure}{\textwidth}
-%     \includegraphics[width=\textwidth]{images/bitmask_00325}
-%     \caption{Bitmask used by 3D Printer as layer model.}
-%   \end{subfigure}
-%
-%   \caption{Printed layer with the respective bitmask.}
-%   \label{fig:layer_bitmask}
-%
-% \end{figure}
-
-
-\begin{figure}[ht]
+\begin{figure}[!h]
   \includegraphics[width=0.65\textwidth]{images/layer_00325_marked_cropped}
   \centering
-  \caption{Scratches marked from figure \ref{fig:layer}}
+  \caption{}
   \label{fig:layer_00325_marked_cropped}
 \end{figure}
 
-TODO: OD with NN, bb and semantic segmentation, vezi bookmark nou
+The image of the layer seen in figure \ref{fig:layer_00325_marked_cropped} has actually been through a pre-processing step called camera calibration. This process calculates a parameter called camera matrix, which can be used to correct the distortion of images. This process works by capturing a known pattern with the camera and then through more complex algorithms, the distortion between the captured pattern and the actual pattern can be parametrized with the camera matrix. The most common calibration pattern is a chessboard, because it is easy to identify it's corners. However, in order to calibrate the camera of the 3D printer a large pattern is required (about 180x100 cm), but for practicality a layer with a grid of crosses is printed and then captured. A captured calibration pattern can be seen in figure \ref{intro:calibration} and a fisheye distortion can be observed. \\
+
+\begin{figure}[!h]
+  \includegraphics[width=0.65\textwidth]{images/introduction/calibration_pattern}
+  \centering
+  \caption{The captured calibration pattern}
+  \label{intro:calibration}
+\end{figure}
+
+The 3D models used by the printer can be actually represented as an image for each layer. In this case, the information provided would be to print or not to print at a specific square 1x1 mm. This information can be easily encoded with a 1800x1000 bitmask, in which the 1's mark the regions to be printed. The interesting part is that those bitmasks are actually the ideal image of each layer and it would be very helpful to integrate this knowledge in the training process. \\
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.5\linewidth]{images/introduction/layer_00100}
+  \caption{A layer image}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.5\linewidth]{images/introduction/bitmask_00100}
+  \caption{The bitmask}
+\end{subfigure}
+\caption{The printed layer and the corresponding bitmask used during the printing process.}
+\label{TODO}
+\end{figure}
+
+This table should provide an overview of the dataset on hand:
+\begin{table}[!h]
+\centering
+\begin{tabular}{ ||c|c||}
+\hline
+dataset property & value \\ [0.5ex]
+\hline\hline
+total images & 2295 \\
+captured image resolution & 2592x1440 \\
+bitmask resolution & 1800x1000 \\
+captured image ratio & 1.8 \\
+bitmask image ratio & 1.8 \\
+images with scratchs & $\approx$ 300 \\
+total scratches & $\approx$ 650 \\
+\hline
+\end{tabular}
+\label{asdfsdfdf}
+\caption{Stats about the current dataset.}
+\end{table}
+
+
 \subsection{Object Detection (With Neural Networks)}
 There are a variety of techniques used to perform object detection. Initially, object detection was posed as a non-neural computer vision problem, but this required a constant and tedious manual tuning of parameters. In order to avoid this tuning, feature-based machine learning algorithms were developed e.g. Viola-Jones algorithm  \cite{viola_joines_paper}. In this way the parameter tuning was partially automatized, but it still required manual tuning like selecting the optimal Haar features for the Viola-Jones algorithm.
 One step further in this direction was the introduction of deep-learning based methods, which use a neural network at heart. A trained neural network would be albe to detect objects with way less parameter tuning. The drawback is that a considerable amount of labeled data for training is now required, which mostly is manually labeled. Luckily, today there are many open source labeled datasets that easily contain hundreds of thounsands of images e.g. ImageNet Dataset \cite{imagenet_site}, OpenImages Dataset \cite{openimages_site}. \\
