@@ -60,6 +60,39 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
 \label{TODO}
 \end{figure}
 
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.4\linewidth]{subim 1}
+  \caption{subcap 1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.4\linewidth]{subim2}
+  \caption{subcap 2}
+\end{subfigure}
+\caption{caption}
+\label{TODO}
+\end{figure}
+
+
+\begin{table}
+\centering
+\begin{tabular}{ ||c|c|c||}
+\hline
+window size & seconds/epoch & total windows\\ [0.5ex]
+\hline\hline
+320x320 & 26 & 3328 \\
+640x640 & 35 & 1777 \\
+960x960 & 44 & 887 \\
+1280x1280 & 102 & 1214 \\
+\hline
+\end{tabular}
+\label{win_size_training}
+\caption{Relevant stats for training on different windows size.}
+\end{table}
+
 conclusions pt urmatorul student
 
 23 + 250 + 22
@@ -68,4 +101,4 @@ lista de experimente:
 full image pt windowing
 fara mosaic
 learning rate prost
-batch size 
+batch size

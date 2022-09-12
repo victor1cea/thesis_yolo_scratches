@@ -182,24 +182,3 @@ Other anomalies like dark spots from the an uneven oxidation are also possible. 
 \textbf{Choosing the neural network:}
 Due to the large amount of modern neural networks, a calculated decision needed to me made. As presented in the previous section, YOLO models are currently showing a good mean average precision, despite using a single-stage approach. Another benefit of YOLO models is that the scratches can be precisely contained into a bounding box and there would be no benefit of using a model with segmentation masks. \\
 There are currently a multitude of YOLO versions developed by different research groups. The final decision was to use YOLOv5 by ultralytics \cite{yolov5_git} since it quickly displayed a good performance, was written in a popular framework like PyTorch and provided support for logging and debugging tools. Other versions, such as YOLOv4 \cite{yolov4_paper}, YOLOX \cite{yolox_paper} and YOLOR \cite{yolor_paper}, were some interesting candidates, but each came with it's drawbacks. YOLOv4 had similar performance to YOLOv5, however it had longer training times and a very rudimentary logging system (no support for tools like Tensorboard). YOLOR and YOLOX had interesting twists regarding the architectures, but YOLOX used a custom framework called MegEngine \cite{megengine_git} and YOLOR lacked documentation and large community support. A few initial experiments were also not better than YOLOR or YOLOX. \\
-
-
-\begin{figure}[ht]
-  \centering
-
-  \begin{subfigure}{0.85\textwidth}
-    \includegraphics[width=\textwidth]{images/layer_dark_scratch}
-    \caption{Layer with dark spots.}
-
-  \end{subfigure}
-
-  \begin{subfigure}{0.85\textwidth}
-    \includegraphics[width=\textwidth]{images/layer_dark_scratch_cropped}
-    \caption{Zoomed to the upper left corner of the layer. The green bounding box is safely a dark spot, but the blue bounding box is can be an ambiguous case.}
-  \end{subfigure}
-
-  \caption{Example of full layer image. This layer contains some dark oxidation spots, which in turn might be also problematic, especially if they have a thinner and taller shape.}
-  \label{intro:layer_oxidation}
-
-
-\end{figure}
