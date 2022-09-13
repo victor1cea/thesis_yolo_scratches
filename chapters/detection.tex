@@ -39,17 +39,17 @@ In YOLOv2 the backbone is a simple network of 19 convolutional layers and 5 max 
 A more complex neck component was first used in YOLOv3 with a simple feature pyramid network (FPN), which was then replaced by a PANet SPP network \cite{panet_paper, spp_paper}, but in YOLOv5 the neck is a PANet FPN network. \\
 The head is the single component that remained almost unchanged. This component is just a small fully convolutional network, known as YOLO head, that predicts the bounding boxes. The YOLO head has some parameters, called anchors, that are used to give the head a rough idea of the general shape of the bounding boxes. Those parameters can be optimized before training.  More details about differences between YOLOv3-5 versions are in \cite{yolo_compare}.\\
 
-TODOs:
--YOLOv5 network size
--poza YOLOv5 network
+% TODOs:
+% -YOLOv5 network size
+% -poza YOLOv5 network
 
-TODO talk also about EfficientDet maybe
+% TODO talk also about EfficientDet maybe
 
-Minor TODOs:\\
--cite or hyperlink dev tools \\
-\\
+% Minor TODOs:\\
+% -cite or hyperlink dev tools \\
+
 YOLOv5 is a version that not only changed the architecture: YOLOv5 is developed in PyTorch (previous ones used Darknet), online augmentations are supported, the simple console output was replaced with more advanced logging tools (e.g. Tensorboard, Weights \& Biases or ClearML), automatic anchor optimization multiple model formats can be used (e.g. ONXX, PyTorch, Tensorflow Lite). In a nutshell, it improved greatly the development experience and speed. \\
-This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and comes with nice features for development as mentioned above. Of course there are some versions, that were not even mentioned such as YOLOR \cite{yolor_paper} and \cite{yolovx_paper}, but YOLOv5 at the time of writing was the most mature and overall established project. \\
+This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolox_paper} and comes with nice features for development as mentioned above. Of course there are some versions, that were not even mentioned such as YOLOR \cite{yolor_paper} and \cite{yolox_paper}, but YOLOv5 at the time of writing was the most mature and overall established project. \\
 
 
 
@@ -58,7 +58,7 @@ This thesis uses YOLOv5, because it outperforms YOLOv1-4 \cite{yolovx_paper} and
 YOLO detectors generally use a distinctive format that consists of 5 mandatory and 1 optional values: \textit{x, y, w, h, class, conf (optional)}. The first 2 values \textit{(x, y)} are the coordinates of the center of the bounding box normalized with respect to the width and height of the image. The next values \textit{w,h} are the width and height of the bounding box, also normalized with respect to the width and height of the image. The next value \textit{class} is the class id. Finally, the value \textit{conf} is used only for detected bounding box to store the confidence of the detection. If \textit{conf} is not given, then it can be assumed that the bounding box is a ground truth and not a detection. Each version might have a slight variation of this notation format, but conceptually they are all the same. \\
 This format make the labels invariant to changes of image ratio and resolution.
 
-TODO talk about other label types
+% TODO talk about other label types
 
 \begin{figure}[!h]
   \includegraphics[width=\textwidth]{images/yolo_images/yolo_labels_zidane}

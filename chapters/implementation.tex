@@ -188,8 +188,15 @@ Another interesting discovery is that it's helpful to mix the windows between th
 
 
 \subsubsection{Windowing Strategies}
-In the subsection from above a "grid windowing" strategy was assumed and as the name suggests, the corners of a grid are used to determine how to extract the windows. In a more advanced form, grid windowing also overlaps the neighboring windows. This helps avoiding the extreme cases of scratch splitting as seen in figure TODO. One problem with grid windowing is that some layer are very similar to each other and also repeat the scratches at the exact same locations. This makes many windows to be repetitive.\\
+In the subsection from above a "grid windowing" strategy was assumed and as the name suggests, the corners of a grid are used to determine how to extract the windows. In a more advanced form, grid windowing also overlaps the neighboring windows. This helps avoiding the extreme cases of scratch splitting as seen in figure \ref{impl:scratch_splits}. One problem with grid windowing is that some layer are very similar to each other and also repeat the scratches at the exact same locations. This makes many windows to be repetitive.\\
 A second window strategy, "random windowing", each scratch is initially contained in a window. The windows are then shifted randomly along the X and Y axis. This avoid the problem of repetitive windows described in grid windowing. \\
+\begin{figure}[!h]
+  \includegraphics[width=\textwidth]{images/implementation/splits/scratch_splits}
+  \centering
+  \caption{Example of scratch splits. Sometimes a window might contain a micro-scratch and this cases can be handled in many ways e.g. by ignoring the label or dropping the window.}
+  \label{impl:scratch_splits}
+\end{figure}
+
 In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. \\
 
 \begin{table}
@@ -379,7 +386,7 @@ YOLOv5 supports horizontal and vertical flips as online augmentations, but the i
 \end{figure}
 
 
-The aforementioned drawbacks lead to the development of an own offline augmentation method that supports the double flip. Because the single output constraint is avoided, the dataset may contain the original as well multiple flips of the image. In order to show the importance of using multiple flips, the results of 4 experiments are shown. In each experiment every window is augmented to a fixed number of flips and the results can be seen in table \ref{impl:flips} The worst performing experiment is clearly the one that uses a single flip version of the image and an improvement can be seen for each extra added flip. The biggest improvement can be seen at the mAP@0.5:0.95 and this means that the mode is able to better fit the bounding boxes. On average, each extra flips adds about 0.1 to this metric. \\
+The aforementioned drawbacks lead to the development of an own offline augmentation method that supports the double flip. Because the single output constraint is avoided, the dataset may contain the original as well multiple flips of the image. In order to show the importance of using multiple flips, the results of 4 experiments are shown. In each experiment every window is augmented to a fixed number of flips and the results can be seen in table \ref{impl:flips_table} The worst performing experiment is clearly the one that uses a single flip version of the image and an improvement can be seen for each extra added flip. The biggest improvement can be seen at the mAP@0.5:0.95 and this means that the mode is able to better fit the bounding boxes. On average, each extra flips adds about 0.1 to this metric. \\
 
 \begin{table}[!h]
 \centering
@@ -394,7 +401,7 @@ flips per window & recall & precision & mAP@0.5 & mAP@0.5:0.95\\ [0.5ex]
 \hline
 \end{tabular}
 \caption{Training with different amount of flips.}
-\label{impl:flips}
+\label{impl:flips_table}
 \end{table}
 
 Flipping methods help the model become more robust in case the data does not contain diverse locations of scratches. \\
@@ -446,23 +453,23 @@ YOLOv5 comes in 5 sizes: nano, small, medium, large, extra large. The nano model
 During initial stages of development small and medium models were used to quickly explore initial hypotheses, but later on the models were upgraded to medium and large size. As expected, larger models generalized better, but with increasingly higher training and inference times. The extra large model was able to provide a few FPS, so there should be no worries about the increased inference time. \\
 There also two types of models, the normal ones and the P6 models. The difference it that the normal models have three output layers called $P3, P4, P5$, while the P6 models have also a fourth layer called $P6$. The P6 models showed consistently a slightly higher mAP@0.5:0.95 of about 0.02, all this without adding significant increase in training time. Therefore, the P6 is the default network type in all experiments showed.
 
-TODO table with epoch times
-TODO show big mAP plots
+% TODO table with epoch times
+% TODO show big mAP plots
 
 \textbf{Weights:}
 For a unique dataset that contains bounding boxes with a disproportionate shape ratio and context information encoded in the color channels, a training from default weights seems very promising, but this works only if the dataset is very large. The only solution is to use the pretrained weights, which provided better results than the default weights.  \\
-TODO show plots
+% TODO show plots
 
 \textbf{Hyperparameter evolution}
 
 \textbf{Batch Size:}
 The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic. For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favor of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size.
 The explanation is that higher batch sizes help with a better batch normalization. \\
-TODO show results \\
+% TODO show results \\
 
 \textbf{Learning Rate and Gradient:}
 The initial experiments showed high jumps after each epoch, so a switch from the standard stochastic gradient descent to AdamW has been made. The documentation recommends for AdamW to change the learning rate from 0.01 to 0.001, but a step size of 0.0001 showed a more stable evolution from epoch to epoch.
-TODO maybe show some results
+% TODO maybe show some results
 
 \textbf{Loss Function:}
 The loss functions has three components:
@@ -497,8 +504,8 @@ The general loss function with the respective hyperparameters can be sketched as
 \textbf{Hyperparameter Evolution:}
 YOLOv5 offers hyperparameter optimization method based on a genetic algorithm. This should in theory partially automate the task of hyperparameter optimization, but this required thousands of GPU hours if the default parameters are set as starting point. From a time perspective it was better to simply manually run some experiments and then take an educated guess. \\
 Towards the end of this project the hyperparameters were better optimized and a better starting point with a  strongly reduced search range could be provided to the hyperparameter evolution script. This helped for minor optimizations. \\
-TODO show an output
-TODO source/cite this $https://docs.ultralytics.com/tutorials/hyperparameter-evolution/$
+% TODO show an output
+% TODO source/cite this $https://docs.ultralytics.com/tutorials/hyperparameter-evolution/$
 
 \textbf{Best Weights:}
 The best weights are determined by the \textit{model fitness} function:
@@ -512,5 +519,5 @@ By default, $w_p=0, w_r=0, w_m=0.1, w_M=0.9$, which is actually fine, because th
 The scope of this section is to highlight some nice features of the used tools that were helpful during the development process. One important tool was FiftyOne \cite{fiftyone_git}, which can be used for dataset versioning and visualization. This tool supports advanced visualization filters and dataset format conversion. In the beginning, multiple YOLO versions were tested and each of them had a slightly different format and with FiftyOne the datasets could be quickly converted. The FifityOne filters could be use to see only a subset of the detections e.g. low confidence detections and it helped understand the consequences of different approaches.  \\
 For annotation CVAT was great in combination with FiftyOne, because datasets in any format could be uploaded directly to CVAT server. After the annotation process is finished, the newly annotated datasets could be imported back into FiftyOne's database. \\
 For logging Weights \& Biases is used, because YOLOv5 has integrated support for this platform. With Weights \& Biases it is easier to share training results and generate figure of training reports. A YOLOv5 specific logging feature is the \textit{Bounding Box Debugger}, which can be used to see how the model predicts on the validation set for every epoch that saves the weights. This feature is very helpful for the two stage training, when metrics and loss results lose meaning. \\
-TODO BB debugger fig here \\
+% TODO BB debugger fig here \\
 A great alternative is CoreML, which is supported also by YOLOv5. The classic Tensorboard tool works too, but the limited features makes it difficult to work with a higher number of experiments. \\
