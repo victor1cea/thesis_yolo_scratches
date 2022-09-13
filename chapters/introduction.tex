@@ -22,7 +22,7 @@ As mentioned in the previous paragraphs, a 3D printer contains a camera to track
   \label{fig:layer_00325_marked_cropped}
 \end{figure}
 
-The image of the layer seen in figure \ref{fig:layer_00325_marked_cropped} has actually been through a pre-processing step called camera calibration. This process calculates a parameter called camera matrix, which can be used to correct the distortion of images. This process works by capturing a known pattern with the camera and then through more complex algorithms, the distortion between the captured pattern and the actual pattern can be parametrized with the camera matrix. The most common calibration pattern is a chessboard, because it is easy to identify it's corners. However, in order to calibrate the camera of the 3D printer a large pattern is required (about 180x100 cm), but for practicality a layer with a grid of crosses is printed and then captured. A captured calibration pattern can be seen in figure \ref{intro:calibration} and a fisheye distortion can be observed. \\
+The image of the layer seen in figure \ref{fig:layer_00325_marked_cropped} has actually been through a pre-processing step called camera calibration. This process calculates a parameter called camera matrix, which can be used to correct the distortion of images. This process works by capturing a known pattern with the camera and then through more complex algorithms, the distortion between the captured pattern and the actual pattern can be parametrized with the camera matrix. The most common calibration pattern is a chessboard, because it is easy to identify it's corners. However, in order to calibrate the camera of the 3D printer a large pattern is required (about 180x100 cm), but for practicality a layer with a grid of crosses is printed and then captured. A captured calibration pattern can be seen in figure \ref{intro:calibration} and a strong radial distortion can be observed. \\
 
 \begin{figure}[!h]
   \includegraphics[width=0.65\textwidth]{images/introduction/calibration_pattern}
@@ -94,12 +94,28 @@ Regarding the architecture of neural networks, the detection process may have on
 The first YOLO object detector, now known as YOLOv1 \cite{yolov1_paper}, got a lot of attention for outperforming the then state-of-the-art object detectors such as DPM \cite{dpm_paper}, Fast R-CNN \cite{fast_rcnn_paper} and Faster R-CNN \cite{faster_rcnn_paper}. Also the simplicity of YOLO was quite refreshing for using only 24 convolutional layers and 2 fully connected layers only, unlike the sophisticated R-CNN based architectures. \\
 Even if in some very deep model variations of Fast and Faster R-CNN the mean average precision (mAP) was slightly better,the FPS counter would take a massive hit e.g. 0.5 FPS only for Fast R-CNN. \\
 
-\begin{figure}[!h]
-  \centering
-  \includegraphics[width=0.75\linewidth]{images/yolo_images/compare_yolov1}
-  \caption{TODO: make own table. YOLOv1 compared to then state-of-the-art models \cite{yolov1_paper}}
-\end{figure}
 
+\begin{table}
+  \centering
+    \begin{tabular}{ ||c|c|c|c||}
+    \hline
+    Detector & real-time? & mAP & FPS\\ [0.5ex]
+    \hline\hline
+    100Hz DPM & yes & 16.0 & 100 \\
+    30Hz DPM & yes & 26.0 & 30 \\
+    Fast YOLOv1 & yes & 52.7 & 155 \\
+    YOLOv1 & yes & 63.4 & 45 \\
+    Fastest DPM & no & 30.4 & 15 \\
+    R-CNN Minus R & yes & 53.5 & 6 \\
+    Fast R-CNN & yes & 70.0 & 0.5 \\
+    Faster R-CNN VGG-16 & yes & 73.2 & 7 \\
+    Faster R-CNN ZF & yes & 62.1 & 18 \\
+    YOLO VGG-16 & yes & 66.4 & 21 \\
+    \hline
+    \end{tabular}
+  \label{intro:yolov1_comp_table}
+  \caption{YOLOv1 compared to then state-of-the-art models \cite{yolov1_paper}}
+\end{table}
 
 This first successful initial release of YOLO was a launch pad for development of subsequent YOLO versions, so that a new class of object detectors was born. This class of architecture contains 3 main components: backbone, neck and head.
 The backbone has the role to extract features from the image, while the neck tries to aggregate the features from different stages from the backbone. In the end the head does the prediction. Usually the backbone has a quite simple build like ResNet-101 and Darknet-53 \cite{yolov3_paper}.For feature aggregation SPP \cite{spp_paper} and FPN \cite{fpn_paper} are a popular choice . \\
@@ -142,16 +158,16 @@ In the table below some relevant statistics about the dataset are presented:
 \hline
 property & value \\ [0.5ex]
 \hline\hline
-total images & 2295 \\
-images with scratches & $\approx$ 300 \\
+% total images & 2295 \\
+% images with scratches & $\approx$ 300 \\
 total scratches & $\approx$ 650 \\
 scratch average length & 138 px \\
 scratch median length & 117 px \\
 scratch min length & 24 px \\
 scratch max length & 630 px \\
 scratch length std. deviation & 104 \\
-image size & $2592 \times 1440$ \\
-bitmask size & $1800 \times 1000$ \\
+% image size & $2592 \times 1440$ \\
+% bitmask size & $1800 \times 1000$ \\
 
 \hline
 \end{tabular}
