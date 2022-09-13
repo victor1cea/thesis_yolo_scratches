@@ -53,11 +53,11 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
 
 
 \begin{figure}[!h]
-\centering
-\captionsetup{justification=centering,margin=2cm}
-\includegraphics[width=\columnwidth]{TODO}
-\caption{TODO}
-\label{TODO}
+  \centering
+  \captionsetup{justification=centering,margin=2cm}
+  \includegraphics[width=\columnwidth]{TODO}
+  \caption{TODO}
+  \label{TODO}
 \end{figure}
 
 \begin{figure}[!h]
@@ -89,8 +89,8 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
     1280x1280 & 102 & 1214 \\
     \hline
     \end{tabular}
-  \label{win_size_training}
   \caption{Relevant stats for training on different windows size.}
+  \label{win_size_training}
 \end{table}
 
 conclusions pt urmatorul student

@@ -31,6 +31,7 @@ During the filtering process, it was obeserved that some scratches had a surpris
 \end{figure}
 
 \subsection{Bitmask Integration}
+\label{subsection:bm}
 
 \textbf{The challenge:}
 As discussed in \ref{intro:challenges}, the images of the layers have two types of anomalies:
@@ -96,6 +97,7 @@ This concept of filling the channels with context information was tested under m
 The first example does not include any information about the previous bitmask, so the second type of anomalies, the artifacts from previous layers, are detected as edges. The second example was problematic in some cases, because a logical OR of two bitmasks might treat a gap between two segments from the previous layer as a printed region. This leads to detecting a thin gap as a scratch. In the third example the initial intuition was that a Sobel-filter will directly show where the edges are, but the problem is that information about the current printed regions is lost. The list of variations is long, but those were some examples to get an intuition how context information is lost or malformed.
 
 \subsection{Windowing}
+\label{subsection:windowing}
 
 \textbf{The challenges:} In the current release of YOLOv5 rectangular images are not that well supported. Data shuffling during training is available only for square input images, which is needed for a more robust training. Internally, rectangular images are actually padded to a square shape. This means that the images can be simply padded before using them as input to YOLOv5, but is the color or method of padding relevant? If so, how does this affect the training? \\
 Another problem during development are questionable scratches like the ones that are positioned exactly on the edge and weird regions like oxidation spots. The easy way would be to simply ignore those images, but what if the image contains only one questionable scratch and three prominent scratches? The luxury of throwing away images is not very affordable with this small dataset. Remember that the dataset on hand is minuscule in comparison with open datasets. \\
@@ -123,19 +125,19 @@ In set of tests the smallest window size was 320x320 and the size was increased 
 The avoidance of scratch splitting was somewhat helpful when training with bigger windows, but it seemed unlikely that this was the only contributing factor for better metrics, since scratch splitting occurred on less than 10\% of the total scratches. Also, the edge cases, in which the smaller split of scratch was below a threshold length, was filtered from the dataset. \\
 
 \begin{table}
-\centering
-\begin{tabular}{ ||c|c|c||}
-\hline
-window size & seconds/epoch & total windows\\ [0.5ex]
-\hline\hline
-320x320 & 26 & 3328 \\
-640x640 & 35 & 1777 \\
-960x960 & 44 & 887 \\
-1280x1280 & 102 & 1214 \\
-\hline
-\end{tabular}
-\label{win_size_training}
-\caption{Relevant stats for training on different windows size.}
+  \centering
+    \begin{tabular}{ ||c|c|c||}
+    \hline
+    window size & seconds/epoch & total windows\\ [0.5ex]
+    \hline\hline
+    320x320 & 26 & 3328 \\
+    640x640 & 35 & 1777 \\
+    960x960 & 44 & 887 \\
+    1280x1280 & 102 & 1214 \\
+    \hline
+    \end{tabular}
+  \caption{Relevant stats for training on different windows size.}
+  \label{win_size_training}
 \end{table}
 
  A hypothesis is that larger windows provide more examples of scratch-free printed parts, which might contain some interesting cases like a darker edge or a gradient of gray. This in turn makes the model more robust. An initial naive approach was to put more background images in the 640x640 dataset, but the problem is that it even with the higher bound of 20\% background images it did not work. This is because many of the background images were irrelevant and did not contain printed parts. A second approach was to split each window of the 1280x1280 datasets into 4 640x640 windows. With this second approach, "double windowing", the results were similar to the experiment with 1280x1280 windows! The batch size on the double windowed dataset can be increased about 4 times, which leads to better batch normalization. \\
@@ -201,15 +203,15 @@ grid windowing & 0.84  & 0.82 & 0.89 & 0.02 \\
 double windowing & 0.81  & 0.78 & 0.83 & 0.02 \\
 \hline
 \end{tabular}
-\label{impl:win_strategy}
 \caption{Overview of the stability of different windowing strategies/methods.}
+\label{impl:win_strategy}
 \end{table}
 
 \subsubsection{Adaptations for Detection}
 If a model is trained on windows instead of the original images, some pre- and post-processing steps for detection need to be considered. \\
 Before the detection, images need to be split in windows of similar shapes used in training. The strategy needs to be grid windowing, because all areas of the images need to be detected and this strategy makes reconstruction of the image easier. Also, an extra set of window between neighboring windows can be used to avoid scratch splitting. \\
 After the detection, the windows with the respective detections need to be reconstructed to the original window. One naive way would be to draw detections on the windows and the reconstruct the windows into the original image. However, the trick is that with grid windowing every window has a predetermined position and the actual reconstruction of a new image can be avoided. In this implementation of grid windowing, the position of a window is specified by the upper left corner, width and height. This meta information can be easily encoded e.g. in the name of the file. Let's assume that a window of size 640x640 with the upper left corner at (500, 1000) contains a detection. This detection can now be translated by (500, 1000) and a valid detection for the original image is obtained. The translated detections can now be drawn directly in the original image.\\
-Note that the detection is in YOLO format and the position of the initial detection is expressed in normalized coordinates with respect to the window size.Therefore, a conversion of the detection from the YOLO label format to COCO format \ref{coco_site} for the translation step is needed. After the translation, the detection can be converted back into the YOLO format.  Alternatively, the translation can be normalized with respect to the original image size.\\
+Note that the detection is in YOLO format and the position of the initial detection is expressed in normalized coordinates with respect to the window size.Therefore, a conversion of the detection from the YOLO label format to COCO format \cite{coco_site} for the translation step is needed. After the translation, the detection can be converted back into the YOLO format.  Alternatively, the translation can be normalized with respect to the original image size.\\
 The naive way is at least 2 times slower, but it still was able to deliver 1 FPS, which for this project is actually acceptable. A real-time detection is however possible with the second approach. The table \ref{impl:win_inference} shows the tradeoff between window size and inference time. \\
 
 \begin{table}
@@ -224,11 +226,11 @@ window size & inference time & total windows & total layers & FPS\\ [0.5ex]
 1280x1280 & 100 & 1368 & 228 & 2.28 \\
 \hline
 \end{tabular}
-\label{impl:win_inference}
 \caption{Impact of windowing on inference.}
+\label{impl:win_inference}
 \end{table}
 
-Another post-processing step after the translation of the detections is the merging of detections. Because scratches might get split, the respective detections should be some overlapping bounding boxes. Those bounding boxes need to be also merged. The problem is that sometimes the bounding boxes might not overlap at all and be even a few pixels apart and that is why a more generous overlap or an extra set of windows as shown in \ref{extra_win} can be used used. This helps in connecting the disjointed detections. \\
+Another post-processing step after the translation of the detections is the merging of detections. Because scratches might get split, the respective detections should be some overlapping bounding boxes. Those bounding boxes need to be also merged. The problem is that sometimes the bounding boxes might not overlap at all and be even a few pixels apart and that is why a more generous overlap or an extra set of windows as shown in \ref{impl:extra_win} can be used used. This helps in connecting the disjointed detections. \\
 
 \begin{figure}[!h]
 \centering
@@ -272,7 +274,7 @@ As before, the only parameter available is the application probability. Sadly, t
 
 
 \textbf{Translate and Scale: }
-Those two online affine augmentations are ok, if used carefully. Like before, they have only one parameter, but this time the parameter specifies the translation or scaling range e.g. 0.5 specifies a range of -0.5 to 0.5. For small ranges of up to +/- 0.2 for the translation and up to +/- 0.3 for the scaling the model trains with a nicely varied data. For higher ranges each augmentation had it's own problems. The translation moves the location of the scratch around, but image data is traded for black pixels like in figure TODO. This reduces the amount of relevant background information that provide counter-examples for scratches e.g. thick edges. The scaling affects the average width of the scratch, which in the datasets barely varies by a few pixels. \\
+Those two online affine augmentations are ok, if used carefully. Like before, they have only one parameter, but this time the parameter specifies the translation or scaling range e.g. 0.5 specifies a range of -0.5 to 0.5. For small ranges of up to +/- 0.2 for the translation and up to +/- 0.3 for the scaling the model trains with a nicely varied data. For higher ranges each augmentation had it's own problems. The translation moves the location of the scratch around, but image data is traded for black pixels like in figure \ref{impl:translation}. This reduces the amount of relevant background information that provide counter-examples for scratches e.g. thick edges. The scaling affects the average width of the scratch, which in the datasets barely varies by a few pixels. \\
 Ideally would be to shift the window on the layer, so that the black regions are replaced with real data. The constraints of online augmentations make this impossible. \\
 
 \begin{figure}[!h]
@@ -288,7 +290,7 @@ Ideally would be to shift the window on the layer, so that the black regions are
   \caption{Translated Window}
 \end{subfigure}
 \caption{The translated window loses context information.}
-\label{TODO}
+\label{impl:translation}
 \end{figure}
 
 
@@ -344,7 +346,7 @@ std. dev. of length & 110 \\
 \end{table}
 
 
-\textbf{Contrast:} As stated in TODO, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
+\textbf{Contrast:} As stated in the introduction, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
 In most experiments a contrast change of +/- 0.15 with any application probability helped the model be more robust and less false positive were detected. \\
 
 \textbf{Flips:} Flipping means rotating the image around the vertical or horizontal axis. This simple, yet effective method prevents the model to look for a specific structure in the images. In the current use case, the scratches are not always perfectly centered in the bounding boxes. This might happen because most tools provide a usual feedback only after the drawing process of the bounding boxes begins. \\
@@ -391,8 +393,8 @@ flips per window & recall & precision & mAP@0.5 & mAP@0.5:0.95\\ [0.5ex]
 4 & 0.91 & 0.93 & 0.02 & 0.66 \\
 \hline
 \end{tabular}
-\label{impl:flips}
 \caption{Training with different amount of flips.}
+\label{impl:flips}
 \end{table}
 
 Flipping methods help the model become more robust in case the data does not contain diverse locations of scratches. \\
@@ -400,10 +402,9 @@ Flipping methods help the model become more robust in case the data does not con
 
 All the above augmentation methods are helpful for the given use case of scratch detections with the exception of the CutMix. Now the next paragraphs will discuss types of augmentations that proved to be affecting the general performance of the model.
 
-\textbf{Occlusions:} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask. TODO cite papers of the augs
+\textbf{Occlusions:} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask.
 
-\textbf{HSV augmentation:} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in TODO. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
-TODO workaround on the first channel does not work because grayscale
+\textbf{HSV augmentation:} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in \ref{subsection:bm}. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
 
 \textbf{Shears and Rotations:} One main characteristic of the scratches is the verticality. Image shearing or rotations will generate images that are outside of the distribution and will force the model to learn about scratches horizontal and diagonal scratches that do not actually exist. Another problem is that the anchors of the bounding boxes will not be properly optimized, because a diagonally placed scratch will not a shorter and wider bounding box. This mean that the fitting of bounding boxes will get worse.
 
@@ -418,27 +419,23 @@ In the current implementation of YOLOv5 there is a hidden pipeline of augmentati
 \item CLAHE (Contrast Limited Adaptive Histogram Equalization): This one tries to reduce the noise of an image and it ends up removing very faded scratches or making the oxidation marks very dark. This will make the model see less edge cases. \\
 \end{enumerate}
 The application probability is only 1\% for all, but they still might confuse the model with the altered bitmasks and less expressive images. Those are used as an example for creating a custom online augmentation with \textit{albumentations} and the best way to deactivate the augmentations it to delete the provided example. Technically, if the \textit{albumentations} library is not installed all the custom online augmentations are disabled, but this will disable also the self implemented augmentations like the contrast, which is definitely not a good idea.
-TODO this is more technical, is it ok?
 
-TODO images from \ref{roboflow_yolov4_augs}
-TODO What is the Bag of Freebies in YOLOv4?
-TODO talk about Bag of Specials
+% TODO images from \ref{roboflow_yolov4_augs}
+% TODO What is the Bag of Freebies in YOLOv4?
+% TODO talk about Bag of Specials
 
-TODO talk about anchors in YOLO in detection.tex
+% TODO talk about anchors in YOLO in detection.tex
 
 \subsection{Two Stage Training}
 The false positive were most of the time the bigger problem than the false negatives. With windowing the model has on average multiple chances to detect the same scratch due to the overlapping of the windows and therefore less scratches are missed. To push down the number of false positive, a two stage training approach can be used to feed the false positives to the model as a negative class. Note that this should not be confused with a two stage detection. \\
 In two stage training two datasets are used. The first one contains no background images, but the second one extends the first dataset by containing all the background windows too. Remember that for YOLO a background rate of 0-20\% is recommended, so only the first dataset can be normally used for training. Now the model can be trained a first time on the first dataset. Then an inference is performed on the second dataset and the false positives can be all marked as a second class. Now a third dataset is created, which contains the newly obtained 2 class labels, but also with no background windows. This dataset in an enhancement of the first dataset by marking all the false positive with a new class and introducing background windows that might further contain false positives. Finally, a second training experiment is performed with the third dataset. \\
-TODO drawing of 2 stage training \\
-This way the model learns in the second stage from the mistakes in made in the first stage and from relevant background windows. The similar concept of introducing meaningful background images can be seen also at TODO with the \textit{double windowing} approach. The metrics on the second class are not very important, because this class is not really a class of objects, but rather a sinkhole for outliers and unexpected cases. One example of an unexpected case is the presence of a black border in the images. Those black borders can be eliminated in a pre-processing step, but then this pre-processing step needs to be also integrated in the inference. Also, this pre-processing steps might involve future manual adjustments, if in future datasets the border becomes thicker or thinner. With a two stage training approach all those cases can be learned by the model and manual tuning is avoided.\\
-TODO show black border \\
+% TODO drawing of 2 stage training \\
+This way the model learns in the second stage from the mistakes in made in the first stage and from relevant background windows. The similar concept of introducing meaningful background images can be seen also at \ref{subsection:windowing} with the \textit{double windowing} approach. The metrics on the second class are not very important, because this class is not really a class of objects, but rather a sinkhole for outliers and unexpected cases. One example of an unexpected case is the presence of a black border in the images. Those black borders can be eliminated in a pre-processing step, but then this pre-processing step needs to be also integrated in the inference. Also, this pre-processing steps might involve future manual adjustments, if in future datasets the border becomes thicker or thinner. With a two stage training approach all those cases can be learned by the model and manual tuning is avoided.\\
 After the second stage the initial number of false positives drops by 80\% on average, but there is a slight problem with the metrics and validation losses. Because the second class is actually a sinkhole, the metrics and validation losses from this class do not have a relevant meaning. Because YOLOv5 outputs by default the metrics and losses aggregated and not for each class individually, it is difficult to track the second training experiment. \\
-TODO drawing of 2 stage training alternative or maybe combine with the one above\\
+% TODO drawing of 2 stage training alternative or maybe combine with the one above\\
 An alternative way for the 2 stage training is that the after creation of the third dataset, the labels for the second class can be deleted, but the respective windows are kept. This way the model gets to see the outliers and tricky cases without using a second class. This way the second training experiment can be then properly monitored. The downside of this approach is that the false positive rate drops by only 60\% on average, because there is no bounding box to specifically mark the problematic situations. \\
 The two stage training is a process that can learn to be more robust and in the end it does affect the inference time. In YOLO specific terms, this technique is considered a \textit{Bag of Freebies}. \\
 
-TODO future work 2 stage training with 2 classes proper metrics and losses during training on weights and biases, what about 3 classes, what about multiple stages \\
-TODO future work maybe use feature points for small/outlier scratches and bounding boxes for large/normal scratches.
 
 
 \subsection{Hyperparameters}
@@ -459,7 +456,7 @@ TODO show plots
 \textbf{Hyperparameter evolution}
 
 \textbf{Batch Size:}
-The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic (TODO source). For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favor of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size.
+The official documentation recommends that training should be performed on the biggest batch size possible in order to produce the best batch normalization statistics, but meanwhile on the official Github repository the developers suggest that YOLOv5 is batch agnostic. For the sake of finding the truth, multiple experiments with varying batch sizes have been made. The results were that for batch sizes up to 64 the map@0.5:0.95 metric was in favor of bigger batch sizes. Other metrics had no tangible differences. Bigger batches required more than 2 GPUs or compromising to a smaller window size.
 The explanation is that higher batch sizes help with a better batch normalization. \\
 TODO show results \\
 
@@ -492,16 +489,10 @@ The general loss function with the respective hyperparameters can be sketched as
   \end{array}
 \end{equation}
 
-TODO maybe add images from $https://gombru.github.io/2018/05/23/cross_entropy_loss/$ or a general formula
+% TODO maybe add images from $https://gombru.github.io/2018/05/23/cross_entropy_loss/$ or a general formula
 
-TODO CCE loss for mutually exclusive as future work $https://github.com/ultralytics/yolov5/issues/5401$
-TODO box loss alternatives
-
-
-\textbf{IoU threshold:}
-maybe later \\
-
-
+% TODO CCE loss for mutually exclusive as future work $https://github.com/ultralytics/yolov5/issues/5401$
+% TODO box loss alternatives
 
 \textbf{Hyperparameter Evolution:}
 YOLOv5 offers hyperparameter optimization method based on a genetic algorithm. This should in theory partially automate the task of hyperparameter optimization, but this required thousands of GPU hours if the default parameters are set as starting point. From a time perspective it was better to simply manually run some experiments and then take an educated guess. \\
@@ -514,7 +505,7 @@ The best weights are determined by the \textit{model fitness} function:
 \begin{equation}
 f = w_p * precision + w_r * recall + w_m * mAP@0.5 + w_M * mAP@0.5:0.95
 \end{equation}
-By default, $w_p=0, w_r=0, w_m=0.1, w_M=0.9$, which is actually fine, because the mAP is calculated based on the precision and recall. In case of the second stage of the two stage training process it's better to save the weights periodically and test them using a custom metrics calculator. \\
+By default, $w_p=0, w_r=0, w_m=0.1, w_M=0.9$, which is actually fine, because the mAP is calculated based on the precision and recall in a balanced way. In case of the second stage of the two stage training process it's better to save the weights periodically and test them using a custom metrics calculator. \\
 
 
 \subsection{Development Environment}

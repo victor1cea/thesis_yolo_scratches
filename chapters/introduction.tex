@@ -8,7 +8,7 @@ In the current setup, the 3D printer uses binder jetting technology. This type o
   \captionsetup{justification=centering,margin=2cm}
   \includegraphics[width=0.5\linewidth]{images/introduction/binderjetting}
   \caption{A sketch of a 3D printer}
-  \label{TODO}
+  \label{intro:printer}
 \end{figure}
 In this thesis a YOLO-based neural network solution is proposed and explored for this automatization procedure.  \\
 
@@ -46,7 +46,7 @@ The 3D models used by the printer can be actually represented as an image for ea
   \caption{The bitmask}
 \end{subfigure}
 \caption{The printed layer and the corresponding bitmask used during the printing process.}
-\label{TODO}
+\label{intr:layer_example}
 \end{figure}
 
 This table should provide an overview of the dataset on hand:
@@ -125,7 +125,7 @@ Later on, different research groups developed their own YOLO-based object detect
 This sections provides an overview of the main challenges faced during the development and research of the YOLO-based object detector. The main challenge can be usually divided in smaller, more specific sub-challenges, which will be discussed in depth in the next chapter. In no particular order of importance, the main challenges are:
 
 \textbf{Small dataset:}
-As seen in section TODO, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only a fraction of the images contain scratches. \\
+As seen in section \ref{intro:dataset_sizes}, the images of the printed 3D layers are grayscale images and the target objects are some long thin scratches. This is in contrast with the open datasets that contain RGB images with 80 different objects, which do not even closely resemble a scratch. As a consequence, only the small dataset at hand of about 2300 images can be used for training. The situation gets even worse after discovering that only a fraction of the images contain scratches. \\
 \begin{figure}[!h]
 \centering
 \includegraphics[width=0.4\columnwidth]{images/introduction/dataset_sizes}
@@ -139,7 +139,7 @@ A fortunate thing is that the scratches can fit very good in bounding boxes and 
 \textbf{Identifying relevant scratches:}
 % alternative:  consistency of the labels
 The scratches present in the dataset are sometimes very faded and annotating those scratches leads to an overly sensitive model. From a practical point of view, those scratches might not even affect the actual printed object. Therefore, only prominent and deep scratches need to be marked. \\
-This is easier said than done, because humans have problems separating the weak scratches from strong scratches. This separation task is just an alternative version of Sorites Paradox actually. In figure TODO, a gradient from stronger scratches to weaker ones can be seen. How can one determine an objective threshold between the stronger and weaker scratches? \\
+This is easier said than done, because humans have problems separating the weak scratches from strong scratches. This separation task is just an alternative version of Sorites Paradox actually. In figure \ref{intro:original_scratch_fades}, a gradient from stronger scratches to weaker ones can be seen. How can one determine an objective threshold between the stronger and weaker scratches? \\
 Also being inconsistent with the annotation e.g. first images contain weaker scratches than the final images, is another problem. This inconsistency would only "confuse" the model.
 
 \begin{figure}[!h]
@@ -175,7 +175,7 @@ scratch length std. deviation & 104 \\
 
 
 \textbf{Domain Knowledge Integration:}
-As seen in figure TODO, two close edges might look like a scratch, but the bitmask can be used to clarify the situation. This exact process of comparing the layer image with the respective bitmask is the motivation of including also the bitmask for training and inference. The problem is that most models take exactly one image and a file with labels as input and now a bitmask needs to be included somehow.\\
+As seen in figure \ref{intro:double_edge}, two close edges might look like a scratch, but the bitmask can be used to clarify the situation. This exact process of comparing the layer image with the respective bitmask is the motivation of including also the bitmask for training and inference. The problem is that most models take exactly one image and a file with labels as input and now a bitmask needs to be included somehow.\\
 
 \begin{figure}[!h]
 \centering
@@ -216,7 +216,24 @@ Another problem is that small artifacts from previous layers can be visible in t
 \label{intro:image_artifacts}
 \end{figure}
 
-Other anomalies like dark spots from the an uneven oxidation are also possible. An in some cases those spots have a thin and tall shape that also can be confused with a scratch. Such an example can be seen in figure \ref{intro:layer_oxidation}.
+Other anomalies like dark spots from the an uneven oxidation are also possible. In some cases those spots have a thin and tall shape that also can be confusing to tell if it's a scratch. Such an example can be seen in figure \ref{intro:layer_oxidation}.
+
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{0.75\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/introduction/oxidation/layer_00010_cropped_marked}
+  \caption{This oxidation spot is very likely to have on the marked region a scratch. }
+\end{subfigure}
+\begin{subfigure}{0.75\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/introduction/oxidation/layer_00016_cropped_marked}
+  \caption{Harder to tell if it's a scratch or not.}
+\end{subfigure}
+\caption{Example of oxidation spots with potential scratches.}
+\label{intro:layer_oxidation}
+\end{figure}
 
 
 \textbf{Choosing the neural network:}

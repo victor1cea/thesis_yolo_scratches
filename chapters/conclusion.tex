@@ -11,7 +11,7 @@ With double windowing it has been proved that adding relevant background windows
 In order to push down the number of false positives \textbf{the two stage training} approach is used. In the first variant a second class is used to explicitly mark the mistakes from the first training stage. The second variant just introduces the false positive as background windows. This second variant uses also the concept of finding relevant background windows as done with double windowing. The first variant performs better, but tracking the progress during training is difficult, because the extra added class is not an actual class. The second variant deliver also good results, but a bit worse than the first variant, however the upside being that tracking in the second stage is still possible. \\
 \textbf{Augmentations} methods help the model to become more robust and overfit less, especially the online augmentations. The first thumb rule is that augmentations that might alter the RGB color channels should be avoided, because they end up modifying the integrated bitmasks. The idea of the bitmasks is that they provide a pixel perfect context information and it makes no sense to alter such information. An exception in this sense might be the contrast augmentation, because the contrast is applied only on the channel that contains the original image. However, the HSV augmentation method can also be applied on the channel with original image, but HSV modifications are not targeted for grayscale images. The second rule of thumb is to avoid occlusions, because it ends up completely or partially covering, which translates to data loss or corruption. If a future dataset contains an amount of images and labels comparable to the open datasets, then occlusions might be a pertinent regularization technique. \\
 Some augmentations methods like Mosaic created shorter scratches and previous experiments suggest that training on short scratches makes it more difficult to detect longer scratches. Therefore, a custom online stretching augmentation has been developed to overcome this bias during training. \\
-\textbf{Hyperparameters} enhance the results and a small tweak can sometimes have a great impact. The change to an AdamW gradient with a tiny step size of TODO prevented the huge fluctuations of the metrics and losses between epochs. Also, adjusting the weights of the loss functions showed that a trade-off between precision and recall can be obtained. With a strong recall, there was some space to trade-off for a better precision. The box loss was tuned down, so that a good enough localization is provided and the focus is kept on objective and class loss.
+\textbf{Hyperparameters} enhance the results and a small tweak can sometimes have a great impact. The change to an AdamW gradient with a tiny step size of 0.0001 prevented the huge fluctuations of the metrics and losses between epochs. Also, adjusting the weights of the loss functions showed that a trade-off between precision and recall can be obtained. With a strong recall, there was some space to trade-off for a better precision. The box loss was tuned down, so that a good enough localization is provided and the focus is kept on objective and class loss.
 
 \subsection*{Future Work}
 All the work generated some nice solutions for the YOLO-based scratch detector. Due to time constraints some limitations still exist and also due to newly released YOLO versions (e.g. YOLOv7) some interesting questions can be posed. \\
@@ -22,7 +22,23 @@ A fourth limitations is posed by \textbf{the small dataset}, but know with the k
 A first possible enhancement would be to experiment with \textbf{alternative loss functions}. In \cite{yolo_smoke_paper} the box tightness and location was improved by replacing the current GIoU functions with Complete Intersection over Union (CIoU) or Distance Intersection Over Union (DIoU). The DIoU is an enhancement of GIoU and CIoU is in turn an enhancement of DIoU, so some improvement would be expected. In the context of multi-class detections, the BCE loss could be replaced with a Categorical Class Entropy (CCE). The BCE is advantageous for multi-labeling of the same object e.g. the labels \textit{dog} and \textit{animal} can be used to label a dog. In the current situation the labels are multi-exclusive by being a scratch or a false positive from the first training stage, so the CCE might help the model better distinguish classes. \\
 A second possible enhancement would be to change the hardcoded values for the \textbf{metrics during training}. More specifically, it would be nice to get also the mAP at lower threshold like 0.4 during training. This is helpful in the beginning when the model is able to correctly identify the scratches, but due to a bad localization the IoU often slightly under 0.5. Therefore, it was difficult to tell without manual intervention, if the model failed to completely detect scratches or if the localization was bad during training. \\
 A third possible more complex enhancement would be to upgrade to the new \textbf{YOLOv7}. This change opens the doors to many new possibilities and improvements. YOLOv7 is currently in it's early stages, but the team behind this project is a reputable team that developed the YOLOv1-4 versions.\\
- YOLOv7 also allows a new type of labels called \textbf{keypoints}. An example of keypoints can be seen in figure TODO.
-TODO keypoint images \\
+ YOLOv7 also allows a new type of labels called \textbf{keypoints}. An example of keypoints can be seen in figure \ref{conc:yolov7_kp_annot}.
+
+ \begin{figure}[!h]
+   \centering
+   \captionsetup{justification=centering,margin=2cm}
+   \includegraphics[width=0.75\columnwidth]{images/conclusions/yolov7_keypoints}
+   \caption{YOLOv7 keypoint annotations}
+   \label{conc:yolov7_kp_annot}
+ \end{figure}
+
 An interesting idea would be to replace the bounding boxes of the scratches with 2 keypoints. The idea of using bounding boxes was that it simplifies the labeling process and it also removes the need of pixel perfect labeling. In the same direction would be the usage of keypoints, because there will no more worries regarding the width of the bounding box. This dimensionality reduction might remove important data captured by the bounding boxes. \\
-TODO example of 2 keypoints \\
+
+
+ \begin{figure}[!h]
+   \centering
+   \captionsetup{justification=centering,margin=2cm}
+   \includegraphics[width=0.75\columnwidth]{images/conclusions/bb_vs_kp_annot}
+   \caption{Alternative annotations}
+   \label{conc:bb_vs_kp}
+ \end{figure}
