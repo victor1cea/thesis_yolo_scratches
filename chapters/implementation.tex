@@ -197,23 +197,6 @@ A second window strategy, "random windowing", each scratch is initially containe
   \label{impl:scratch_splits}
 \end{figure}
 
-In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. \\
-
-\begin{table}
-\centering
-\begin{tabular}{ ||c|c|c|c|c||}
-\hline
-windowing method & average mAP@0.5 & min mAP & max mAP & std. deviation\\ [0.5ex]
-\hline\hline
-random windowing & 0.8 & 0.68 & 0.91 & 0.1 \\
-grid windowing & 0.84  & 0.82 & 0.89 & 0.02 \\
-double windowing & 0.81  & 0.78 & 0.83 & 0.02 \\
-\hline
-\end{tabular}
-\caption{Overview of the stability of different windowing strategies/methods.}
-\label{impl:win_strategy}
-\end{table}
-
 \subsubsection{Adaptations for Detection}
 If a model is trained on windows instead of the original images, some pre- and post-processing steps for detection need to be considered. \\
 Before the detection, images need to be split in windows of similar shapes used in training. The strategy needs to be grid windowing, because all areas of the images need to be detected and this strategy makes reconstruction of the image easier. Also, an extra set of window between neighboring windows can be used to avoid scratch splitting. \\
@@ -514,6 +497,151 @@ f = w_p * precision + w_r * recall + w_m * mAP@0.5 + w_M * mAP@0.5:0.95
 \end{equation}
 By default, $w_p=0, w_r=0, w_m=0.1, w_M=0.9$, which is actually fine, because the mAP is calculated based on the precision and recall in a balanced way. In case of the second stage of the two stage training process it's better to save the weights periodically and test them using a custom metrics calculator. \\
 
+\subsection{Results}
+The previous section discussed the effects of windowing, bitmask integrations, augmentations and hyperparameter optimization on a more individual level, which might not paint the full picture. The aim of this subsection is to provide a more in-depth analysis of the aforementioned improvements by discussing multiple metrics. Also, some concrete detection examples will be compared between the models to better highlight the differences. \\
+All the experiments will use the same test split and the relevant statistics about the splits are available in table \ref{impl:test_split_stats}.
+
+\begin{table}[!h]
+  \centering
+    \begin{tabular}{ ||c|c|||}
+    \hline
+    statistic & value \\ [0.5ex]
+    \hline\hline
+    image count & 230 \\
+    scratch count & 45 \\
+    ratio from dataset & 12\% \\
+    confidence threshold & maximizes F1-score \\
+    \hline
+    \end{tabular}
+  \caption{Relevant stats for training on different windows size.}
+  \label{impl:test_split_stats}
+\end{table}
+
+
+
+\textbf{Bitmask Integration} \\
+The best bitmask integration technique uses the layer image, the corresponding bitmask and the previous bitmask. Other techniques presented at end of \ref{subsection:bm} had decent results, but most of them failed at properly integrating the bitmask or accessing information from the previous bitmask. The figure \ref{impl:bm_compare} highlights perfectly how alternative integration methods compare to the best one. The ground truth and respective bitmasks are shown in figure \ref{impl:layer_example}.
+
+
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.9\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/implementation/results/bm/gt}
+  \caption{Ground truth}
+\end{subfigure}
+
+\begin{subfigure}{.9\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/implementation/results/bm/bm_blur}
+  \caption{Using a bitmask and it's blurred version}
+\end{subfigure}
+
+\begin{subfigure}{.9\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/implementation/results/bm/bm_prev}
+  \caption{Using current and previous bitmasks}
+\end{subfigure}
+
+
+\caption{The alternative methods tend to have many false positives. The best method that uses the current bitmask and previous bitmask and is therefore able to avoid the false detections. More examples in the appendix.}
+\label{impl:bm_compare}
+\end{figure}
+
+
+The table bellow contains multiple metrics for individual bitmask integration methods. The recall rate is usually great, but the main difference is seen at the false positive count and implicitly precision metric.
+
+\begin{table}[!h]
+  \centering
+    \begin{tabular}{ ||c|c|c|c|c|c||}
+    \hline
+    B channel & G channel & FP count & FN count & precision & recall\\ [0.5ex]
+    \hline\hline
+    bitmask & previous bitmask & 16 & 1 & 0.9 & 0.97 \\
+    bitmask & logical OR of bitmasks & 37 & 3 & 0.67 & 0.93 \\
+    bitmask & blurred bitmask & 25 & 2 & 0.85 & 0.95 \\
+    bitmask & bitmask AND layer image & 13 & 2  & 0.75 & 0.95 \\
+    \hline
+    \end{tabular}
+  \caption{Bitmask integration methods comparison}
+  \label{wadfds}
+\end{table}
+
+Moreover, the recall rate barely changes for most methods across multiple confidence thresholds. This result is displayed in the table below.
+
+\begin{table}[!h]
+  \centering
+    \begin{tabular}{ ||c|c|c|c|c|c||}
+    \hline
+    B channel & G channel & 0.2 & 0.4 & 0.6 & 0.8\\ [0.5ex]
+    \hline\hline
+    bitmask & previous bitmask & 0 & 1 & 1 & 1 \\
+    bitmask & logical OR of bitmasks & 0 & 2 & 3 & 3 \\
+    bitmask & blurred bitmask & 0 & 1 & 2 & 2 \\
+    bitmask & bitmask AND layer image & 0 & 0 & 2 & 2 \\
+    \hline
+    \end{tabular}
+  \caption{False negative count change across multiple confidence thresholds.}
+  \label{wadfds23}
+\end{table}
+
+On the other hand, the false positive count decreases rapidly for each confidence threshold increase. See table \ref{impl:fp_count}.
+
+\begin{table}[!h]
+  \centering
+    \begin{tabular}{ ||c|c|c|c|c|c||}
+    \hline
+    B channel & G channel & 0.2 & 0.4 & 0.6 & 0.8\\ [0.5ex]
+    \hline\hline
+    bitmask & previous bitmask & 138 & 77 & 35 & 18 \\
+    bitmask & logical OR of bitmasks & 169 & 108 & 72 & 40 \\
+    bitmask & blurred bitmask & 214 & 202 & 131 & 27 \\
+    bitmask & bitmask AND layer image & 186 & 139 & 85 & 30 \\
+    \hline
+    \end{tabular}
+  \caption{False positive count change across multiple confidence thresholds.}
+  \label{impl:fp_count}
+\end{table}
+
+\textbf{Windowing}
+
+In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. \\
+
+\begin{table}
+\centering
+\begin{tabular}{ ||c|c|c|c|c||}
+\hline
+windowing method & average mAP@0.5 & min mAP & max mAP & std. deviation\\ [0.5ex]
+\hline\hline
+random windowing & 0.8 & 0.68 & 0.91 & 0.1 \\
+grid windowing & 0.84  & 0.82 & 0.89 & 0.02 \\
+double windowing & 0.81  & 0.78 & 0.83 & 0.02 \\
+\hline
+\end{tabular}
+\caption{Overview of the stability of different windowing strategies/methods. The individual results are obtained by experiments with square windows of size 320, 640, 960 and 1280.}
+\label{impl:win_strategy}
+\end{table}
+
+A more interesting result is the mAP@0.5:0.95 for different window sizes. The table below shows the results.
+
+
+\begin{table}
+\centering
+\begin{tabular}{ ||c|c|c|c|c||}
+\hline
+window size & FP count & FN count & precision & recall\\ [0.5ex]
+\hline\hline
+320x320 & 0.8 & 0.68 & 0.91 & 0.1 \\
+\hline
+\end{tabular}
+\caption{Overview of the stability of different windowing strategies/methods. The individual results are obtained by experiments with square windows of size 320, 640, 960 and 1280.}
+\label{impl:win_size}
+\end{table}
+
+
+
+nalyzed, but this metric does not show the problems with the double detections. The double detections are generated, because smaller windows generate shorter scratches and sometimes the detections from two different windows do not overlap. In case of a double detection the IoU threshold is not reached and this leads to false positives. \\
 
 \subsection{Development Environment}
 The scope of this section is to highlight some nice features of the used tools that were helpful during the development process. One important tool was FiftyOne \cite{fiftyone_git}, which can be used for dataset versioning and visualization. This tool supports advanced visualization filters and dataset format conversion. In the beginning, multiple YOLO versions were tested and each of them had a slightly different format and with FiftyOne the datasets could be quickly converted. The FifityOne filters could be use to see only a subset of the detections e.g. low confidence detections and it helped understand the consequences of different approaches.  \\

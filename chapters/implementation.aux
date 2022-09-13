@@ -1,0 +1,100 @@
+\relax 
+\citation{scipy_signal}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Implementation of the Scratch Detector}{17}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Labeling the Dataset}{17}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Sketch of the prominence metric computation.\relax }}{17}{}\protected@file@percent }
+\newlabel{impl:prominence_metric}{{17}{17}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces The prominence metric in action on the scratches from figure \ref {intro:original_scratch_fades}. Weaker scratch tend to have a lower score.\relax }}{18}{}\protected@file@percent }
+\newlabel{impl:marked_scratch_fades}{{18}{18}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Bitmask Integration}{18}{}\protected@file@percent }
+\newlabel{subsection:bm}{{3.2}{18}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces The bitmask helps differentiating scratches from two closely positioned edges.\relax }}{19}{}\protected@file@percent }
+\newlabel{fig:thin_splits}{{19}{19}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Visualization of the two different pre-processing steps.\relax }}{20}{}\protected@file@percent }
+\newlabel{}{{20}{20}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Windowing}{20}{}\protected@file@percent }
+\newlabel{subsection:windowing}{{3.3}{20}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.1}Window Shape and Size}{21}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Relevant stats for training on different windows size.\relax }}{22}{}\protected@file@percent }
+\newlabel{win_size_training}{{3}{22}}
+\citation{coco_site}
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Visualization of normal vs. double vs. random background windowing methods. The blank background windows do not help the model learn about the printed structures.\relax }}{23}{}\protected@file@percent }
+\newlabel{impl:normal_vs_double_bck_win}{{21}{23}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces With mixing the model does not overfit and metrics such as mAP are considerably better. In this figures step is meant as epoch. The respective MLOps platform uses this specific wording.\relax }}{23}{}\protected@file@percent }
+\newlabel{impl:mixing}{{22}{23}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.2}Windowing Strategies}{23}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Example of scratch splits. Sometimes a window might contain a micro-scratch and this cases can be handled in many ways e.g. by ignoring the label or dropping the window.\relax }}{24}{}\protected@file@percent }
+\newlabel{impl:scratch_splits}{{23}{24}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.3}Adaptations for Detection}{24}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Impact of windowing on inference.\relax }}{25}{}\protected@file@percent }
+\newlabel{impl:win_inference}{{4}{25}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces On the left: Example of a failed merge due to a small overlap between the windows On the right: Possible extra window to get overlapping detections. \relax }}{25}{}\protected@file@percent }
+\newlabel{impl:extra_win}{{24}{25}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Augmentations}{25}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Mosaic augmentation applied on the dataset on hand.\relax }}{26}{}\protected@file@percent }
+\newlabel{impl:mosaic}{{25}{26}}
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces CutMix augmentation that covers a valid scratch with a white background.\relax }}{27}{}\protected@file@percent }
+\newlabel{impl:cut_mix}{{26}{27}}
+\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces The translated window loses context information.\relax }}{28}{}\protected@file@percent }
+\newlabel{impl:translation}{{27}{28}}
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces The translated window loses context information.\relax }}{28}{}\protected@file@percent }
+\newlabel{sfdfsfsdfhf3}{{28}{28}}
+\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces Histogram of the length of scratches.\relax }}{29}{}\protected@file@percent }
+\newlabel{asdfsdf}{{29}{29}}
+\newlabel{impl:scratch_prop}{{\caption@xref {impl:scratch_prop}{ on input line 334}}{29}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Statistic of the scratch lengths.\relax }}{29}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {30}{\ignorespaces All possible flips of an image.\relax }}{30}{}\protected@file@percent }
+\newlabel{impl:flips}{{30}{30}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Training with different amount of flips.\relax }}{31}{}\protected@file@percent }
+\newlabel{impl:flips_table}{{6}{31}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Two Stage Training}{32}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Hyperparameters}{33}{}\protected@file@percent }
+\citation{focal_loss_paper}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Results}{35}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Relevant stats for training on different windows size.\relax }}{36}{}\protected@file@percent }
+\newlabel{impl:test_split_stats}{{7}{36}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Bitmask integration methods comparison\relax }}{36}{}\protected@file@percent }
+\newlabel{wadfds}{{8}{36}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces False negative count change across multiple confidence thresholds.\relax }}{36}{}\protected@file@percent }
+\newlabel{wadfds23}{{9}{36}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces False positive count change across multiple confidence thresholds.\relax }}{36}{}\protected@file@percent }
+\newlabel{impl:fp_count}{{10}{36}}
+\citation{fiftyone_git}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Overview of the stability of different windowing strategies/methods. The individual results are obtained by experiments with square windows of size 320, 640, 960 and 1280.\relax }}{37}{}\protected@file@percent }
+\newlabel{impl:win_strategy}{{11}{37}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Overview of the stability of different windowing strategies/methods. The individual results are obtained by experiments with square windows of size 320, 640, 960 and 1280.\relax }}{37}{}\protected@file@percent }
+\newlabel{impl:win_size}{{12}{37}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Development Environment}{37}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {31}{\ignorespaces The alternative methods tend to have many false positives. The best method that uses the current bitmask and previous bitmask and is therefore able to avoid the false detections. More examples in the appendix.\relax }}{39}{}\protected@file@percent }
+\newlabel{impl:bm_compare}{{31}{39}}
+\@setckpt{chapters/implementation}{
+\setcounter{page}{40}
+\setcounter{equation}{7}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{0}
+\setcounter{section}{3}
+\setcounter{subsection}{8}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{31}
+\setcounter{table}{12}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{subfigure}{3}
+\setcounter{subtable}{0}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{10}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{r@tfl@t}{0}
+\setcounter{parentequation}{0}
+}
