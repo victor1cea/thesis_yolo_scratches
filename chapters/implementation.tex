@@ -511,6 +511,7 @@ All the experiments will use the same test split and the relevant statistics abo
     scratch count & 45 \\
     ratio from dataset & 12\% \\
     confidence threshold & maximizes F1-score \\
+    IoU threshold & 0.33 \\
     \hline
     \end{tabular}
   \caption{Relevant stats for training on different windows size.}
@@ -606,7 +607,7 @@ On the other hand, the false positive count decreases rapidly for each confidenc
 
 \textbf{Windowing}
 
-In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. \\
+In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. For the next results the bitmask integration method is the one that contains both bitmasks.\\
 
 \begin{table}
 \centering
@@ -628,20 +629,64 @@ A more interesting result is the mAP@0.5:0.95 for different window sizes. The ta
 
 \begin{table}
 \centering
-\begin{tabular}{ ||c|c|c|c|c||}
+\begin{tabular}{ ||c|c|c|c|c|c||}
 \hline
-window size & FP count & FN count & precision & recall\\ [0.5ex]
+window size & FP count & FN count & precision & recall & box loss\\ [0.5ex]
 \hline\hline
-320x320 & 0.8 & 0.68 & 0.91 & 0.1 \\
+320x320 & 28 & 0 & 0.85 & 1 & 0.07\\
+640x640 & 19 & 2 & 0.89 & 0.95 & 0.05\\
+960x960 & 11 & 3 & 0.93 & 0.9 & 0.02\\
+1280x1280 & 9 & 3 & 0.96 & 0.9 & 0.02\\
 \hline
 \end{tabular}
-\caption{Overview of the stability of different windowing strategies/methods. The individual results are obtained by experiments with square windows of size 320, 640, 960 and 1280.}
+\caption{Results of using different window sizes. The box loss is calculated during training and it's calculation is based on the IoU. This loss shows how good the bounding boxes of the detections are fitted. }
 \label{impl:win_size}
 \end{table}
 
+The higher windows provide a better precision of a slightly worse recall. The problem of smaller windows is that they have a weaker bounding box fitting and the model tends to use multiple bounding boxes for the same detection. This is seen in figure \ref{impl:win_bb_compare}.
+
+\begin{figure}[!h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/implementation/results/win/320}
+  \caption{320x320 windows}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{images/implementation/results/win/1280}
+  \caption{1280x1280 windows}
+\end{subfigure}
+\caption{Larger windows tend to have less double detections and are able to better fit the bounding boxes.}
+\label{impl:win_bb_compare}
+\end{figure}
+
+\textbf{Two Stage Training} \\
+WIP \\
+Hier will ich die FPs, FNs, precision und recall zwischen den 2 two stage training methoden zeigen. \\
+
+\textbf{Hyperparameter Optimization} \\
+WIP \\
+Muss eine gute strukturierung finden. \\
+
+\textbf{Putting it all together (oder Final Result?)} \\
+WIP \\
+Hier will ich die beste Konfiguration zeigen \\
+Folgendes wird hier sein:
+  - confusion matrix
+  - tabelle mit alle hyperparameters
+  - tabelle mit FPs, FNs, precision, recall, mAP
+  - workflow chart
+
+\begin{figure}[!h]
+  \centering
+  \captionsetup{justification=centering,margin=2cm}
+  \includegraphics[width=\columnwidth]{images/implementation/results/workflow}
+  \caption{Workflow}
+  \label{TODO}
+\end{figure}
 
 
-nalyzed, but this metric does not show the problems with the double detections. The double detections are generated, because smaller windows generate shorter scratches and sometimes the detections from two different windows do not overlap. In case of a double detection the IoU threshold is not reached and this leads to false positives. \\
 
 \subsection{Development Environment}
 The scope of this section is to highlight some nice features of the used tools that were helpful during the development process. One important tool was FiftyOne \cite{fiftyone_git}, which can be used for dataset versioning and visualization. This tool supports advanced visualization filters and dataset format conversion. In the beginning, multiple YOLO versions were tested and each of them had a slightly different format and with FiftyOne the datasets could be quickly converted. The FifityOne filters could be use to see only a subset of the detections e.g. low confidence detections and it helped understand the consequences of different approaches.  \\
