@@ -657,7 +657,7 @@ The higher windows provide a better precision of a slightly worse recall. The pr
 \end{figure}
 
 
-\subsection*{Two Stage Training} 
+\subsection*{Two Stage Training}
 In section \ref{subsection:two_stage_training} two variations of the same approach have been presented. As a reminder, the difference is that one uses a on the second stage a single class and introduces the windows containing false positives in the dataset, while the other one marks the false positives as a second class in the second stage. The trade-off is that the two class approach was harder to track during training, while the one class approach did not had this kind of problems.
 The results of the two stage training approach are summarized in the table below: \\
 \begin{table}
@@ -678,18 +678,37 @@ The results of the two stage training approach are summarized in the table below
 WIP \\
 Hier will ich die FPs, FNs, precision und recall zwischen den 2 two stage training methoden zeigen. \\
 
-\textbf{Hyperparameter Optimization} \\
-WIP \\
-Muss eine gute strukturierung finden. \\
+\subsection*{Hyperparameter Optimization}
+\begin{table}
+  \centering
+    \begin{tabular}{ ||c|c||}
+    \hline
+    hyperparameter  & range value\\ [0.5ex]
+    \hline\hline
+    network size & xl \\
+    network type & P6 \\
+    step size  & 0.0001 \\
+    batch size & 64 \\
+    obj loss & $[1.5, 2]$ \\
+    obj\_pw loss & $[0.5, 0.9]$ \\
+    box loss & 0.035  \\
+    class loss & $[0, 0.2]$ \\
+    class\_pw loss & $[0.75, 1.0]$ \\
+    focal loss & $[0.4, 0.6]$ \\
+    flips & 4 offline \\
+    mosaic & 0.75 \\
+    translation &  0.2 \\
+    scaling & 0.3 \\
+    hsv & 0 \\
+    occlusions & 0 \\
+    image size & 1280 \\
+    \hline
+    \end{tabular}
+  \caption{Configuration of the hyperparameters}
+  \label{impl:hyp_table}
+\end{table}
 
 \textbf{Putting it all together (oder Final Result?)} \\
-WIP \\
-Hier will ich die beste Konfiguration zeigen \\
-Folgendes wird hier sein:\\
-  - confusion matrix \\
-  - tabelle mit alle hyperparameters \\
-  - tabelle mit FPs, FNs, precision, recall, mAP \\
-  - workflow chart figure ref{impl:workflow}\\
 
 \begin{figure}[!h]
   \centering
