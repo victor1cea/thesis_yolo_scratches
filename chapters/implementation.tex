@@ -530,25 +530,18 @@ The best bitmask integration technique uses the layer image, the corresponding b
 
 \begin{figure}[!h]
 \centering
-\begin{subfigure}{.9\textwidth}
-  \centering
-  \includegraphics[width=\linewidth]{images/implementation/results/bm/gt}
-  \caption{Ground truth}
-\end{subfigure}
 
-\begin{subfigure}{.9\textwidth}
+\begin{subfigure}{.6\textwidth}
   \centering
   \includegraphics[width=\linewidth]{images/implementation/results/bm/bm_blur}
   \caption{Using a bitmask and it's blurred version}
 \end{subfigure}
 
-\begin{subfigure}{.9\textwidth}
+\begin{subfigure}{.6\textwidth}
   \centering
   \includegraphics[width=\linewidth]{images/implementation/results/bm/bm_prev}
   \caption{Using current and previous bitmasks}
 \end{subfigure}
-
-
 \caption{The alternative methods tend to have many false positives. The best method that uses the current bitmask and previous bitmask and is therefore able to avoid the false detections. More examples in the appendix.}
 \label{impl:bm_compare}
 \end{figure}
