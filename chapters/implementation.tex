@@ -659,19 +659,19 @@ The higher windows provide a better precision of a slightly worse recall. The pr
 
 \subsection*{Two Stage Training}
 In section \ref{subsection:two_stage_training} two variations of the same approach have been presented. As a reminder, the difference is that one uses a on the second stage a single class and introduces the windows containing false positives in the dataset, while the other one marks the false positives as a second class in the second stage. The trade-off is that the two class approach was harder to track during training, while the one class approach did not had this kind of problems.
-The results of the two stage training approach are summarized in the table below: \\
+The results of the two stage training approach are summarized in table \ref{impl:two_stage_table} \\
 \begin{table}
   \centering
-    \begin{tabular}{||c|c|c|c|c|c||}
+    \begin{tabular}{||c|c|c|c||}
     \hline
-    Mode & FP count & FN count &  precision & recall & FP change\\ [0.5ex]
+    Mode & FP count & precision & FP change\\ [0.5ex]
     \hline\hline
-    $1^{st}$ stage & 16 & 2 & 0.9 & 0 & 0 \\
-    $2^{nd}$ stage with one class & 10 & 2 & 0 & 0 &  -38.5\%\\
-    $2^{nd}$ stage with two classes & 7 & 2 & 0 & 0 & -56.25\%\\
+    $1^{st}$ stage & 16 & 0.9 &0 \\
+    $2^{nd}$ stage with one class & 10 &  0.92 & -38.5\%\\
+    $2^{nd}$ stage with two classes & 7 & 0.95 -56.25\%\\
     \hline
     \end{tabular}
-  \caption{asdf}
+  \caption{With a two stage training approach a drop of 37\%-56\% can be expected depending on the chosen variation. }
   \label{impl:two_stage_table}
 \end{table}
 
@@ -707,6 +707,7 @@ The results of the two stage training approach are summarized in the table below
 \end{table}
 
 \subsection*{Final Result}
+The final results can be seen in table 
 
 \begin{figure}[!h]
   \centering
