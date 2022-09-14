@@ -664,19 +664,17 @@ The results of the two stage training approach are summarized in the table below
   \centering
     \begin{tabular}{||c|c|c|c|c|c||}
     \hline
-    Mode & FP count & FN count & FP count & precision & recall\\ [0.5ex]
+    Mode & FP count & FN count &  precision & recall & FP change\\ [0.5ex]
     \hline\hline
-    first stage & 0 & 0 & 0 & 0 \\
-    first stage & 0 & 0 & 0 & 0 \\
-    first stage & 0 & 0 & 0 & 0 \\
+    $1^{st}$ stage & 16 & 2 & 0.9 & 0 & 0 \\
+    $2^{nd}$ stage with one class & 10 & 2 & 0 & 0 &  -38.5\%\\
+    $2^{nd}$ stage with two classes & 7 & 2 & 0 & 0 & -56.25\%\\
     \hline
     \end{tabular}
   \caption{asdf}
   \label{impl:two_stage_table}
 \end{table}
 
-WIP \\
-Hier will ich die FPs, FNs, precision und recall zwischen den 2 two stage training methoden zeigen. \\
 
 \subsection*{Hyperparameter Optimization}
 \begin{table}
@@ -708,7 +706,7 @@ Hier will ich die FPs, FNs, precision und recall zwischen den 2 two stage traini
   \label{impl:hyp_table}
 \end{table}
 
-\textbf{Putting it all together (oder Final Result?)} \\
+\subsection*{Final Result}
 
 \begin{figure}[!h]
   \centering
