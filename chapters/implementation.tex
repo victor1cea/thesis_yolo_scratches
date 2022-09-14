@@ -236,7 +236,7 @@ It is important to make distinction between online and offline augmentations. Wi
 Basic augmentations methods like contrast and brightness manipulations are not affected by those constraint, but the random windowing is affected by this. Technically speaking, the random windowing is not an augmentation step, but it would be nice to be able to provide during each new epoch a new randomly shifted window for all scratches. This alone might stabilize the whole method and not face the fluctuations as seen in \ref{impl:win_strategy}.\\
 Among the online augmentations, there is a special group that are able to circumvent some of the constraint. Those are some online augmentations that come out-of-the-box with YOLOv5 like CutMix and Mosaic. \\
 
-\textbf{Mosaic:} The mosaic augmentation is an online augmentation that takes 4 images, which are randomly cropped and combines them into 1 image. This augmentation is built-in the YOLOv5 project and the constraint regarding the input for online augmentations is circumvented.
+\subsection*{Mosaic:} The mosaic augmentation is an online augmentation that takes 4 images, which are randomly cropped and combines them into 1 image. This augmentation is built-in the YOLOv5 project and the constraint regarding the input for online augmentations is circumvented.
 The input images are also downscaled at different rates, which helps increase the variance . A trade-off is that the new image actually contains smaller scratches, which raises the question if this has an positive or negative impact. This question is discussed in-depth in the paragraph about the stretch augmentations. \\
 The parameters for this augmentation are only the probability of it being applies. The downscaling factors of the images, the number of the input images and the pick distribution are not parameterized. \\
 Because of this unidimensional parametrization, the experiments were simply testing the effects of the mosaic augmentation at increments of 0.1 for the application probability. The results favored a application probability range between 0.5 and 0.8. This upper bound of 0.8 is a first indicator that the shrinking of the scratches might be problematic. Note that for higher application probabilities the results were actually ok e.g. the mAP@0.5 was only about 2\% smaller on average. The slightly more visible aspect was that for higher probabilities the bounding boxes were on average shorter, but still able to have an  IoU greater than 0.5. \\
@@ -250,7 +250,7 @@ Because of this unidimensional parametrization, the experiments were simply test
 \label{impl:mosaic}
 \end{figure}
 
-\textbf{Cut-Mix:}
+\subsection*{Cut-Mix:}
 The cut-mix is sometimes seen as mosaic augmentation with only 2 input images, but an important distinction needs to be made. The cut-mix crops a regions from an image and pastes it over the other input image at a random location. This was problematic, because sometimes the cropped region was partially or completely covering a scratch. The complet covering of a scratch is simply unwanted information loss and the partial covering was worse than the split scratches, because there is no way of filtering tiny splits like in the windowing process. \\
 As before, the only parameter available is the application probability. Sadly, there is no way optimize/avoid the covering of scratches with the cropped image. For this reason this augmentation method was not used. \\
 
@@ -263,7 +263,7 @@ As before, the only parameter available is the application probability. Sadly, t
 \end{figure}
 
 
-\textbf{Translate and Scale: }
+\subsection*{Translate and Scale: }
 Those two online affine augmentations are ok, if used carefully. Like before, they have only one parameter, but this time the parameter specifies the translation or scaling range e.g. 0.5 specifies a range of -0.5 to 0.5. For small ranges of up to +/- 0.2 for the translation and up to +/- 0.3 for the scaling the model trains with a nicely varied data. For higher ranges each augmentation had it's own problems. The translation moves the location of the scratch around, but image data is traded for black pixels like in figure \ref{impl:translation}. This reduces the amount of relevant background information that provide counter-examples for scratches e.g. thick edges. The scaling affects the average width of the scratch, which in the datasets barely varies by a few pixels. \\
 Ideally would be to shift the window on the layer, so that the black regions are replaced with real data. The constraints of online augmentations make this impossible. \\
 
@@ -285,7 +285,7 @@ Ideally would be to shift the window on the layer, so that the black regions are
 
 
 
-\textbf{Stretch and Squeeze:}
+\subsection*{Stretch and Squeeze:}
 YOLO detectors usually have some hyperparameters the bounding boxes called anchors. The anchors are used as prior by the model for the location and shape of the bounding boxes. Ideally, before every training experiment the anchors need to be optimized with respect to the dataset. For newer YOLO versions this done automatically. With the help of windowing and translations the datasets contains a good variance for the positions of the bounding box and also the width barely varies. However, the length varies from 30 pixels to even above 600 pixels. Also, augmentations methods like mosaic tend to shrink the scratches and windowing introduces split scratches. This makes the training biased towards shorter scratches and the performance on longer scratches might be suboptimal. \\
 
 \begin{figure}[!h]
@@ -336,10 +336,10 @@ std. dev. of length & 110 \\
 \end{table}
 
 
-\textbf{Contrast:} As stated in the introduction, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
+\subsection*{Contrast:} As stated in the introduction, scratches might be more or less prominent, but this effect can be in a way simulated with contrast changes. This method can be implemented as a custom online augmentation. The current implementation uses one parameter for the application probability and one parameter for the range of the contrast change. \\
 In most experiments a contrast change of +/- 0.15 with any application probability helped the model be more robust and less false positive were detected. \\
 
-\textbf{Flips:} Flipping means rotating the image around the vertical or horizontal axis. This simple, yet effective method prevents the model to look for a specific structure in the images. In the current use case, the scratches are not always perfectly centered in the bounding boxes. This might happen because most tools provide a usual feedback only after the drawing process of the bounding boxes begins. \\
+\subsection*{Flips:} Flipping means rotating the image around the vertical or horizontal axis. This simple, yet effective method prevents the model to look for a specific structure in the images. In the current use case, the scratches are not always perfectly centered in the bounding boxes. This might happen because most tools provide a usual feedback only after the drawing process of the bounding boxes begins. \\
 YOLOv5 supports horizontal and vertical flips as online augmentations, but the implementation has some drawbacks. The double flip i.e. horizontal flip, followed by a vertical flips is not supported and if the image gets flipped, the original image will not be used for training. The original image is discarded, because of the constraint of a single output of online augmentations. \\
 
 \begin{figure}[!h]
@@ -392,16 +392,18 @@ Flipping methods help the model become more robust in case the data does not con
 
 All the above augmentation methods are helpful for the given use case of scratch detections with the exception of the CutMix. Now the next paragraphs will discuss types of augmentations that proved to be affecting the general performance of the model.
 
-\textbf{Occlusions:} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask.
+\subsection*{Occlusions} The augmentation methods that end up occluding regions of the images should be avoided. As seen in the CutMix augmentation, this leads to loss or corruption of scratches. Popular augmentations methods that cause this type of occlusion are: Hide and Seek, CutOut, Random Erase and Grid Mask.
 
-\textbf{HSV augmentation:} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in \ref{subsection:bm}. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
+\subsection*{HSV augmentation} This augmentation is native supported by YOLOv5 and has three parameters that effect of the hue, saturation and value/lightness. By default the HSV augmentation is used for training and in theory benefits it should be helpful. The problem with this augmentation is that it cannot be used, if the bitmasks are integrated in the images channels as described in \ref{subsection:bm}. The HSV is essentially an alternative representation of the RGB color model, meaning that random modification of the hue, saturation and lightness will alter the bitmasks inserted in the color channels. For example, an altered bitmask might contain gray pixels on printed regions, instead of 1-valued white pixels and this might blur the precise context information provided by the bitmask. The upsides of integrating bitmask were tremendous and therefore the HSV augmentations will be deactivated.
 
-\textbf{Shears and Rotations:} One main characteristic of the scratches is the verticality. Image shearing or rotations will generate images that are outside of the distribution and will force the model to learn about scratches horizontal and diagonal scratches that do not actually exist. Another problem is that the anchors of the bounding boxes will not be properly optimized, because a diagonally placed scratch will not a shorter and wider bounding box. This mean that the fitting of bounding boxes will get worse.
+\subsection*{Shears and Rotations}
+ One main characteristic of the scratches is the verticality. Image shearing or rotations will generate images that are outside of the distribution and will force the model to learn about scratches horizontal and diagonal scratches that do not actually exist. Another problem is that the anchors of the bounding boxes will not be properly optimized, because a diagonally placed scratch will not a shorter and wider bounding box. This mean that the fitting of bounding boxes will get worse.
 
-\textbf{Image Perspective:} This augmentation has negative effects on a similar note to the shears and rotations. In the given dataset all images are captured from a perpendicular perspective since the camera is positioned directly above the center of the powder bed. Changes in the image perspective will generate images outside of the distribution. \\
+\subsection*{Image Perspective}
+ This augmentation has negative effects on a similar note to the shears and rotations. In the given dataset all images are captured from a perpendicular perspective since the camera is positioned directly above the center of the powder bed. Changes in the image perspective will generate images outside of the distribution. \\
 Perspective changes will also affect the verticality of the scratches, which affects the anchors of the bounding boxes and generates unreal data. \\
 
-\textbf{Hidden Augmentations:}
+\subsection*{Hidden Augmentations}
 In the current implementation of YOLOv5 there is a hidden pipeline of augmentations that are generally bad for the use case of scratch detections. The hidden detections are:
 \begin{enumerate}
 \item Blur and Median Blur: This affects the sharpness of the edges and the model does not learn to distinguish a thick edge from a scratch
@@ -435,7 +437,7 @@ The default hyperparameters are set in accordance to the \textit{model size} and
 \subsection*{Model Size and Type}
 YOLOv5 comes in 5 sizes: nano, small, medium, large, extra large. The nano models are targeted for edge and mobile devices, so for the current use case nano models are not suited.
 During initial stages of development small and medium models were used to quickly explore initial hypotheses, but later on the models were upgraded to medium and large size. As expected, larger models generalized better, but with increasingly higher training and inference times. The extra large model was able to provide a few FPS, so there should be no worries about the increased inference time. \\
-There also two types of models, the normal ones and the P6 models. The difference it that the normal models have three output layers called $P3, P4, P5$, while the P6 models have also a fourth layer called $P6$. The P6 models showed consistently a slightly higher mAP@0.5:0.95 of about 0.02, all this without adding significant increase in training time. Therefore, the P6 is the default network type in all experiments showed.
+There also two types of models, the normal ones and the P6 models. The difference it that the normal models have three output layers called $P3, P4, P5$, while the P6 models have also a fourth layer called $P6$. The P6 models showed consistently a slightly higher mAP@0.5:0.95 of about 0.02, all this without adding significant increase in training time. Therefore, the P6 is the default network type in the training experiments. \\
 
 % TODO table with epoch times
 % TODO show big mAP plots
@@ -523,7 +525,7 @@ All the experiments will use the same test split and same model configuration, u
 
 
 \textbf{Bitmask Integration} \\
-The best bitmask integration technique uses the layer image, the corresponding bitmask and the previous bitmask. Other techniques presented at end of \ref{subsection:bm} had decent results, but most of them failed at properly integrating the bitmask or accessing information from the previous bitmask. The figure \ref{impl:bm_compare} highlights perfectly how alternative integration methods compare to the best one. The ground truth with the respective bitmasks and alternative integrations methods are shown in figures \ref{app:layer_example}, \ref{app:bm_compare_ext_1} and \ref{app:bm_compare_ext_2} in the appendix.
+The best bitmask integration technique uses the layer image, the corresponding bitmask and the previous bitmask. Other techniques presented at end of \ref{subsection:bm} had decent results, but most of them failed at properly integrating the bitmask or accessing information from the previous bitmask. The figure \ref{impl:bm_compare} highlights how alternative integration methods compare to the best one. The ground truth with the respective bitmasks and alternative integrations methods are shown in figures \ref{app:layer_example}, \ref{app:bm_compare_ext_1} and \ref{app:bm_compare_ext_2} in the appendix.
 
 \begin{figure}[!h]
 \centering
@@ -633,7 +635,7 @@ window size & FP count & FN count & precision & recall & box loss\\ [0.5ex]
 1280x1280 & 9 & 3 & 0.96 & 0.9 & 0.02\\
 \hline
 \end{tabular}
-\caption{Results of using different window sizes. The box loss is calculated during training and it's calculation is based on the IoU. This loss shows how good the bounding boxes of the detections are fitted. }
+\caption{Results of using different window sizes. The box loss is calculated during training and its calculation is based on the IoU. This loss shows how good the bounding boxes of the detections are fitted. }
 \label{impl:win_size}
 \end{table}
 
