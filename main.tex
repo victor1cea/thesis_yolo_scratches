@@ -10,15 +10,26 @@
 
 \begin{document}
 \input{pages/cover}
-
+\newpage
+\  %empty page for double sided printing
+\newpage
 \input{pages/title}
-
+\newpage
+\  %empty page for double sided printing
+\newpage
 \input{pages/statement}
-
+\newpage
+\  %empty page
+\newpage
 \input{pages/abstract}
+\newpage
+\  %empty page
+\newpage
 
 
 \tableofcontents
+\newpage
+\  %empty page
 \newpage
 
 \include{chapters/introduction}
@@ -26,6 +37,7 @@
 \include{chapters/implementation}
 \include{chapters/conclusion}
 \include{chapters/appendix}
+
 
 \bibliography{refs}
 \bibliographystyle{plain}
