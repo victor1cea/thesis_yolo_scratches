@@ -18,7 +18,7 @@ As mentioned in the previous paragraphs, a 3D printer contains a camera to track
 \begin{figure}[!h]
   \includegraphics[width=0.65\textwidth]{images/layer_00325_marked_cropped}
   \centering
-  \caption{}
+  \caption{Example of printed layer with scratches.}
   \label{fig:layer_00325_marked_cropped}
 \end{figure}
 
@@ -78,7 +78,7 @@ Because of the already labeled datasets, the manual labor for deep-learning base
 \begin{figure}[!h]
 \centering
 \includegraphics[width=0.65\textwidth]{images/bbs_vs_seg}
-\caption{Labeling methods: on the left bounding boxes, on the right segmentation masks}
+\caption{Labeling methods: on the left bounding boxes, on the right segmentation masks \ref{im_class_vs_obj_det}}
 \end{figure}
 
 Regarding the architecture of neural networks, the detection process may have one or two stages. In a single stage network the prediction is made directly from the extracted features of the image, while in a two stage network the network proposes some regions in the first stage and in the second stage the proposed regions are classified. Initially, single stage detectors predicted faster and could be used for real-time detections, but where performing poorer than two-stage detectors. Conversely, two-stage detectors were not optimal for real-time detection, but were more precise. This rule of thumb got overwritten with the release of You Only Look Once object detector (YOLO).
@@ -106,11 +106,11 @@ Even if in some very deep model variations of Fast and Faster R-CNN the mean ave
     Fast YOLOv1 & yes & 52.7 & 155 \\
     YOLOv1 & yes & 63.4 & 45 \\
     Fastest DPM & no & 30.4 & 15 \\
-    R-CNN Minus R & yes & 53.5 & 6 \\
-    Fast R-CNN & yes & 70.0 & 0.5 \\
-    Faster R-CNN VGG-16 & yes & 73.2 & 7 \\
-    Faster R-CNN ZF & yes & 62.1 & 18 \\
-    YOLO VGG-16 & yes & 66.4 & 21 \\
+    R-CNN Minus R & no & 53.5 & 6 \\
+    Fast R-CNN & no & 70.0 & 0.5 \\
+    Faster R-CNN VGG-16 & no & 73.2 & 7 \\
+    Faster R-CNN ZF & no & 62.1 & 18 \\
+    YOLO VGG-16 & no & 66.4 & 21 \\
     \hline
     \end{tabular}
   \label{intro:yolov1_comp_table}
