@@ -599,7 +599,8 @@ On the other hand, the false positive count decreases rapidly for each confidenc
   \label{impl:fp_count}
 \end{table}
 
-\textbf{Windowing}
+% \textbf{Windowing}
+\subsection*{Windowing}
 
 In multiple head-to-head comparison the 2 strategies traded victories. One important remark is that the grid windowing strategy was actually very stable and the metrics barely fluctuated. This is because the actual windows never change. Meanwhile, the random windowing strategy fluctuates with a standard deviation of 0.1, which is far bigger than the 0.02 provided by the grid windowing. This is mostly, because the randomness can be sometimes very unlucky and for example split multiple scratches. For the next results the bitmask integration method is the one that contains both bitmasks.\\
 
@@ -656,7 +657,7 @@ The higher windows provide a better precision of a slightly worse recall. The pr
 \end{figure}
 
 
-\textbf{Two Stage Training} \\
+\subsection*{Two Stage Training} 
 In section \ref{subsection:two_stage_training} two variations of the same approach have been presented. As a reminder, the difference is that one uses a on the second stage a single class and introduces the windows containing false positives in the dataset, while the other one marks the false positives as a second class in the second stage. The trade-off is that the two class approach was harder to track during training, while the one class approach did not had this kind of problems.
 The results of the two stage training approach are summarized in the table below: \\
 \begin{table}
