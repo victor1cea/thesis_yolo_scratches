@@ -78,7 +78,7 @@ Because of the already labeled datasets, the manual labor for deep-learning base
 \begin{figure}[!h]
 \centering
 \includegraphics[width=0.65\textwidth]{images/bbs_vs_seg}
-\caption{Labeling methods: on the left bounding boxes, on the right segmentation masks \ref{im_class_vs_obj_det}}
+\caption{Labeling methods: on the left bounding boxes, on the right segmentation masks \cite{im_class_vs_obj_det}}
 \end{figure}
 
 Regarding the architecture of neural networks, the detection process may have one or two stages. In a single stage network the prediction is made directly from the extracted features of the image, while in a two stage network the network proposes some regions in the first stage and in the second stage the proposed regions are classified. Initially, single stage detectors predicted faster and could be used for real-time detections, but where performing poorer than two-stage detectors. Conversely, two-stage detectors were not optimal for real-time detection, but were more precise. This rule of thumb got overwritten with the release of You Only Look Once object detector (YOLO).
@@ -86,7 +86,7 @@ Regarding the architecture of neural networks, the detection process may have on
 \begin{figure}[!h]
 \centering
 \includegraphics[width=0.75\textwidth]{images/single_stage_vs_two_stage}
-\caption{Comparing stage types of object detectors.}
+\caption{Comparing stage types of object detectors. \cite{one_stage_vs_two_stage_paper}}
 \end{figure}
 
 
