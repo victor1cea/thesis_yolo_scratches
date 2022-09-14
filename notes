@@ -77,7 +77,7 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
 \end{figure}
 
 
-\begin{table}
+\begin{table}[!h]
   \centering
     \begin{tabular}{ ||c|c|c||}
     \hline
