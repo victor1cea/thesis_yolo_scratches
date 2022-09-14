@@ -89,7 +89,7 @@ ds -> train s, val s, inf s, inf im count, gen_time/300 layers
     1280x1280 & 102 & 1214 \\
     \hline
     \end{tabular}
-  \caption{Relevant stats for training on different windows size.}
+  \caption{Relevant statistics for training on different windows size.}
   \label{win_size_training}
 \end{table}
 
