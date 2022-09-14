@@ -677,6 +677,7 @@ The results of the two stage training approach are summarized in table \ref{impl
 
 
 \subsection*{Hyperparameter Optimization}
+A list with the optimal hyperparameters
 \begin{table}
   \centering
     \begin{tabular}{ ||c|c||}
@@ -707,7 +708,26 @@ The results of the two stage training approach are summarized in table \ref{impl
 \end{table}
 
 \subsection*{Final Result}
-The final results can be seen in table 
+The final results can be seen in table \ref{impl:final_results}. This model was trained with the optimal hyperparameters, best bitmask integration method and best windowing solution. Also, this model is obtained via a 2 stage training with 2 classes.\\
+\begin{table}
+  \centering
+    \begin{tabular}{ ||c|c||}
+    \hline
+    metric &  value\\ [0.5ex]
+    \hline\hline
+    precision & 0.95 \\
+    recall & 0 \\
+    FP count & 0 \\
+    FN count & 0 \\
+    mAP@0.5 & 0 \\
+    mAP@0.5:0.95 & 0 \\
+    \hline
+    \end{tabular}
+  \caption{sdf}
+  \label{impl:final_results}
+\end{table}
+
+
 
 \begin{figure}[!h]
   \centering
